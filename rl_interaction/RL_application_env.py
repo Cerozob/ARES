@@ -11,11 +11,13 @@ from hashlib import md5
 from selenium.common.exceptions import InvalidElementStateException, WebDriverException, \
     StaleElementReferenceException, InvalidSessionIdException, NoSuchElementException, ElementNotVisibleException
 from appium.webdriver.common.touch_action import TouchAction
+from us_coverage.coverage_processor import CoverageProcessor
+from us_logs.logReader import LogReader
 from utils.utils import Utils
 from multiprocessing import Process, Queue
 from appium import webdriver
 from collections import deque
-
+import functools
 
 def search_package_and_setprop(folder):
     '''
@@ -37,6 +39,28 @@ def collect_coverage_jacoco(udid, package, coverage_dir, coverage_count):
     os.system(f'adb -s {udid} shell am broadcast -p {package} -a intent.END_COVERAGE')
     os.system(f'adb -s {udid} pull /sdcard/Android/data/{package}/files/coverage.ec '
               f'{os.path.join(".", coverage_dir, str(coverage_count))}.ec')
+
+# ! This is important
+def collect_coverage_InstruAPK(logReaderObject, udid, package, coverage_dir=None, coverage_count=None):
+    logReaderObject.readLog()
+    newInstrumentedLines = logReaderObject.getNewInstrumentedLines()
+    # for now, just print the lines found
+    if newInstrumentedLines:
+        print('New instrumented lines:')
+        for line in newInstrumentedLines:
+            print(line)
+    # TODO collect them and save them to a file, plus the new coverage count
+
+# ! This is important
+def bug_handler_InstruAPK(logReaderObject, bug_queue, udid):
+    while True:
+        logReaderObject.readLog()
+        newFaults = logReaderObject.getNewFaults()
+        if newFaults:
+            print('New faults:')
+            for fault in newFaults:
+                print(fault)
+                bug_queue.put(str(fault))
 
 
 def bug_handler(bug_queue, udid):
@@ -64,7 +88,7 @@ class RLApplicationEnv(Env):
 
     def __init__(self, coverage_dict, app_path, list_activities,
                  widget_list, bug_set, coverage_dir, log_dir, rotation, internet, merdoso_button_menu, platform_name,
-                 platform_version, udid, instr_emma, instr_jacoco,
+                 platform_version, udid, instr_emma, instr_jacoco, instr_instruapk,
                  device_name, exported_activities, services, receivers,
                  is_headless, appium, emulator, package, pool_strings, visited_activities: list, clicked_buttons: list,
                  number_bugs: list, appium_port, max_episode_len=250, string_activities='',
@@ -86,6 +110,12 @@ class RLApplicationEnv(Env):
         elif instr_jacoco:
             self.instr = True
             self.instr_funct = collect_coverage_jacoco
+        elif instr_instruapk:
+        # ! This is important
+            self.instr = True
+            self.logReaderObject = LogReader(package, udid)
+            # self.coverageProcessorObject = CoverageProcessor(udid, package)
+            self.instr_funct = functools.partial(collect_coverage_InstruAPK, self.logReaderObject)
 
         self.rotation = rotation
         self.internet = internet
@@ -546,7 +576,13 @@ class RLApplicationEnv(Env):
                 pass
 
     def start_bug_handler(self):
-        bug_proc = Process(name='bug_handler', target=bug_handler, args=(self.bug_queue, self.udid))
+        # ! This is important
+        targetFunc = bug_handler
+        targetArgs = (self.bug_queue, self.udid)
+        if self.logReaderObject is not None:
+            targetFunc = bug_handler_InstruAPK
+            targetArgs = (self.logReaderObject, self.bug_queue, self.udid)
+        bug_proc = Process(name='bug_handler', target=targetFunc, args=targetArgs)
         bug_proc.daemon = True
         bug_proc.start()
         return bug_proc.pid

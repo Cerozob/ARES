@@ -51,7 +51,7 @@ class CoverageProcessor(object):
 
     def read_number_of_methods_instrumented(self):
         current_directory = os.getcwd()
-        path = os.path.join(current_directory,"Coverage","instrumentation",self.get_apk_package() + '-locations.json' )
+        path = os.path.join(current_directory,self.get_apk_package() + '-locations.json' )
         with open(path) as file:        
             self.set_methods_instrumented(read_file_number_of_methods(file))
         file.close()
@@ -106,13 +106,13 @@ class CoverageProcessor(object):
             return (self.get_number_methods_called()/self.get_number_of_methods_instrumented())*100
         
         
-# if __name__ == "__main__":
-#     id_device = sys.argv[1]
-#     package_name = sys.argv[2]
-#     coverage_processor = CoverageProcessor(id_device, package_name) #'R5CR70M9SMH', 'org.wikipedia'
-#     #coverage_processor.clear_logcat()
-#     print(coverage_processor.get_logcat())
-coverage_processor = CoverageProcessor('R5CR70M9SMH', 'org.sudowars')
-coverage_processor.clear_logcat()
-while True: 
+if __name__ == "__main__":
+    id_device = sys.argv[1]
+    package_name = sys.argv[2]
+    coverage_processor = CoverageProcessor(id_device, package_name) #'R5CR70M9SMH', 'org.wikipedia'
+    #coverage_processor.clear_logcat()
     print(coverage_processor.generate_adb_logcat())
+# coverage_processor = CoverageProcessor('R5CR70M9SMH', 'org.sudowars')
+# coverage_processor.clear_logcat()
+    while True: 
+      print(coverage_processor.generate_adb_logcat())

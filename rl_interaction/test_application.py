@@ -45,6 +45,7 @@ def main():
     parser.add_argument('--timesteps', type=int, default=3600)
     parser.add_argument('--iterations', type=int, default=10)
     parser.add_argument('--instr_jacoco', default=False, action='store_true')
+    parser.add_argument('--instr_instruapk', default=False, action='store_true')
     parser.add_argument('--instr_emma', default=False, action='store_true')
     parser.add_argument('--save_policy', default=False, action='store_true')
     parser.add_argument('--reload_policy', default=False, action='store_true')
@@ -78,7 +79,9 @@ def main():
     N = args.iterations
     instr_jacoco = args.instr_jacoco
     instr_emma = args.instr_emma
-    if instr_emma and instr_jacoco:
+    instr_instruapk = args.instr_instruapk
+    if instr_emma + instr_jacoco + instr_instruapk > 1:
+        print('Only one instrumentation tool can be used')
         raise AssertionError
     real_device = args.real_device
     algo = args.algo
@@ -157,6 +160,7 @@ def main():
                 number_bugs = []
 
                 os.system(f'adb -s {udid} install -t -r {application}')
+                # ! Root access?
                 result = subprocess.run(
                     ["adb", "shell", "su", "0", "find", "/data/data/", "-type", "d", "-name", f'"{my_package}*"'],
                     capture_output=True)
@@ -176,6 +180,7 @@ def main():
                                            internet=internet,
                                            instr_emma=instr_emma,
                                            instr_jacoco=instr_jacoco,
+                                           instr_instruapk=instr_instruapk,
                                            merdoso_button_menu=merdoso_button_menu,
                                            rotation=rotation,
                                            platform_name=platform_name,
@@ -185,7 +190,7 @@ def main():
                                            device_name=device_name,
                                            max_episode_len=max_timesteps,
                                            is_headless=is_headless, appium=appium, emulator=emulator,
-                                           package=package, exported_activities=exported_activities,
+                                           package=my_package, exported_activities=exported_activities,
                                            services=services, receivers=receivers)
                     if algo == 'TD3':
                         algorithm = TD3Algorithm()

@@ -5,6 +5,8 @@ import subprocess
 import sys
 import traceback
 
+# ! type hinting removed for compatibility with python 3.8
+
 
 class FaultType(Enum):
     ERROR = "Error"
@@ -35,7 +37,7 @@ class LogLine(object):
         self.message = " ".join(lineComponents[4:])
 
     def __str__(self):
-        return f"{self.index};{self.time};{self.pid};{self.tid};{self.tag};{self.message}"
+        return f"{self.index};{self.time};{self.pid};{self.tid};{self.tag.value};{self.message}"
 
 
 class InstrumentationLine(LogLine):
@@ -51,11 +53,11 @@ class InstrumentationLine(LogLine):
         self.callTime = datetime.fromtimestamp(timestamp)
 
     def __str__(self) -> str:
-        return f"{self.index};{self.time};{self.pid};{self.tid};{self.tag};{self.message};{self.methodIndex};{self.filename};{self.methodName};{self.methodParameters};{self.callTime}"
+        return f"{self.index};{self.time};{self.pid};{self.tid};{self.tag.value};{self.message};{self.methodIndex};{self.filename};{self.methodName};{self.methodParameters};{self.callTime}"
 
 
 class Fault(object):
-    def __init__(self, lines: list[LogLine]):
+    def __init__(self, lines):
         self.header = lines[0]
         self.lines = lines[1:]
         self.type = FaultType.ERROR if self.header.tag == LogTag.ERROR else FaultType.EXCEPTION
@@ -80,6 +82,7 @@ class LogReader(object):
         self.lastCoverageRequest = 0
         self.lastFaultRequest = 0
 
+
     def readLog(self):
         newLines, newInstrumentedLines, newFaults = self.readRawLines(self.getLogLines())
         self.rawLines += newLines
@@ -87,7 +90,7 @@ class LogReader(object):
         self.faults += newFaults
         return self.rawLines, self.instrumentedLines, self.faults
 
-    def runReadCommand(self, command: list[str]):
+    def runReadCommand(self, command):
         logCollect = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = logCollect.communicate()
         if len(stderr) != 0:
@@ -112,13 +115,13 @@ class LogReader(object):
             self.lastBufferPosition += len(encodedLog)
         return decodedLines
 
-    def addDeviceSerial(self, command: list[str]):
+    def addDeviceSerial(self, command):
         if self.device is not None:
             command.append("-s")
             command.append(self.device)
         return command
 
-    def getPIDApk(self, packageName: str) -> str:
+    def getPIDApk(self, packageName):
         # Get PID of the APK
         command = ['adb']
         command = self.addDeviceSerial(command)
@@ -135,7 +138,7 @@ class LogReader(object):
             pid = int(pid)
         return pid
 
-    def getLogLines(self) -> list[str]:
+    def getLogLines(self):
 
         logLines = []
 
@@ -157,7 +160,7 @@ class LogReader(object):
                 return []
             else:
                 print(f"Previous PID found: {previousPID}")
-                print("App is not currently running but was running previously, it may have crashed, logging with previous pid {currentPid}")
+                print(f"App is not currently running but was running previously, it may have crashed, logging with previous pid {currentPID}")
         else:
             print(f"App with package name {self.packageName} is currently running with PID {currentPID}")
             if previousPID is None:
@@ -172,7 +175,7 @@ class LogReader(object):
         self.apkPid = currentPID
         return logLines
 
-    def readRawLines(self, lines: list[str]):
+    def readRawLines(self, lines):
         # ["Exception:", "Error:", "FATAL EXCEPTION"]
         faultStartKeywords = [fault.value for fault in FaultType]
         faultReadingKeywords = ["Caused by", ": at ", ": ... ", f"Process: {self.packageName}", "AndroidRuntime: "]
@@ -192,15 +195,17 @@ class LogReader(object):
             else:
                 try:
                     logLine = LogLine(line, index)
-                except ValueError as v:
-                    print(f"Error parsing line {line}")
+                except Exception as v:
+                    print(f"Error parsing line: '{line}'")
                     traceback.print_exc()
                     continue
             rawLines.append(logLine)
             if logLine.message.startswith("InstruAPK"):
                 logLine = InstrumentationLine(line, index)
                 # debugInstrumentedLines.append(logLine)
+                rawLines[-1] = logLine
                 instrumentedLines.append(index)
+
             if faultReading:
                 if any(keyword in logLine.message for keyword in faultReadingKeywords):
                     currentFaultLines.append(logLine)
@@ -222,25 +227,25 @@ class LogReader(object):
         self.lastBufferPosition = 0
         return
 
-    def getFaults(self) -> list[Fault]:
+    def getFaults(self):
         return self.faults
 
-    def getInstrumentedLines(self) -> list[InstrumentationLine]:
+    def getInstrumentedLines(self):
         lines: list[InstrumentationLine] = []
         for line in self.instrumentedLines:
             lines.append(self.rawLines[line])
         return lines
 
-    def getNewFaults(self) -> list[Fault]:
+    def getNewFaults(self):
         newFaults: list[Fault] = self.faults[self.lastFaultRequest:]
         self.lastFaultRequest = len(self.faults)
         return newFaults
 
-    def getNewInstrumentedLines(self) -> list[InstrumentationLine]:
+    def getNewInstrumentedLines(self):
         newLines: list[InstrumentationLine] = []
-        for line in self.instrumentedLines[self.lastInstrumentedRequest:]:
+        for line in self.instrumentedLines[self.lastCoverageRequest:]:
             newLines.append(self.rawLines[line])
-        self.lastInstrumentedRequest = len(self.instrumentedLines)
+        self.lastCoverageRequest = len(self.instrumentedLines)
         return newLines
 
 
