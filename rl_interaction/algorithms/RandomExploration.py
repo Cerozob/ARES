@@ -1,5 +1,5 @@
-from rl_interaction.algorithms.ExplorationAlgorithm import ExplorationAlgorithm
-from rl_interaction.utils.utils import Timer
+from algorithms.ExplorationAlgorithm import ExplorationAlgorithm
+from utils.utils import Timer
 
 
 class RandomAlgorithm(ExplorationAlgorithm):

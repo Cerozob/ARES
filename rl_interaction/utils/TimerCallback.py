@@ -2,7 +2,7 @@ import os
 import time
 
 from stable_baselines3.common.callbacks import BaseCallback
-from rl_interaction.utils.utils import Timer
+from utils.utils import Timer
 from loguru import logger
 
 

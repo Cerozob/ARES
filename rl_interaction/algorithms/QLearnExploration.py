@@ -1,6 +1,6 @@
-from rl_interaction.algorithms.ExplorationAlgorithm import ExplorationAlgorithm
-from rl_interaction.utils.utils import Timer
-from rl_interaction.utils.q import Q
+from algorithms.ExplorationAlgorithm import ExplorationAlgorithm
+from utils.utils import Timer
+from utils.q import Q
 
 
 class QLearnAlgorithm(ExplorationAlgorithm):

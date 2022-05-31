@@ -38,7 +38,7 @@ class AppiumLauncher:
     def start_appium(self):
         if self.system == 'Windows':
             self.process = subprocess.Popen(['appium', '-p', f'{self.port}', '--log-level', 'error:error'],
-                                            creationflags=0x00000008)
+                                            creationflags=0x00000008, shell=True)
         else:
             self.process = subprocess.Popen(['appium', '-p', f'{self.port}', '--log-level', 'error:error'])
         os.system('adb start-server')

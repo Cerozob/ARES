@@ -4,9 +4,9 @@ import numpy
 from gym import spaces
 from stable_baselines3.sac.policies import MlpPolicy
 from stable_baselines3 import SAC
-from rl_interaction.algorithms.ExplorationAlgorithm import ExplorationAlgorithm
-from rl_interaction.utils.TimerCallback import TimerCallback
-from rl_interaction.utils.wrapper import TimeFeatureWrapper
+from algorithms.ExplorationAlgorithm import ExplorationAlgorithm
+from utils.TimerCallback import TimerCallback
+from utils.wrapper import TimeFeatureWrapper
 
 
 class SACAlgorithm(ExplorationAlgorithm):

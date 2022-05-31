@@ -11,7 +11,7 @@ from hashlib import md5
 from selenium.common.exceptions import InvalidElementStateException, WebDriverException, \
     StaleElementReferenceException, InvalidSessionIdException, NoSuchElementException, ElementNotVisibleException
 from appium.webdriver.common.touch_action import TouchAction
-from rl_interaction.utils.utils import Utils
+from utils.utils import Utils
 from multiprocessing import Process, Queue
 from appium import webdriver
 from collections import deque

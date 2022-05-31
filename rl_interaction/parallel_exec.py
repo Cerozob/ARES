@@ -123,6 +123,8 @@ def main():
             cmd.append('--reload_policy')
         if real_device:
             cmd.append('--real_device')
+
+        print(cmd)
         processes.append(subprocess.Popen(cmd))
 
     exit_codes = [p.wait() for p in processes]

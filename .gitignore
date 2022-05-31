@@ -7,6 +7,7 @@
 /__pycache__
 rl_interaction/utils/__pycache__/*
 rl_interaction/__pycache__/*
+rl_interaction/algorithms/__pycache__/*.pyc
 rl_interaction/coverage/
 rl_interaction/logger.log
 .old/parallel_rl_env.py
@@ -19,3 +20,14 @@ rl_interaction/logs copia/
 .old
 rl_interaction/coverage copia/
 algorithms/__pycache__/*
+*.pyc
+.pyo
+*.whl
+*.pyc
+*.log
+*.apk
+*.cpython-38.pyc
+*.pyc
+*.pyc
+*.pyc
+*.pyc
