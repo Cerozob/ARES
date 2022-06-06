@@ -12,6 +12,8 @@ from algorithms.RandomExploration import RandomAlgorithm
 import pickle
 from utils.utils import AppiumLauncher, EmulatorLauncher
 from RL_application_env import RLApplicationEnv
+# from rl_interaction.utils.utils import AppiumLauncher, EmulatorLauncher, Utils
+# from rl_interaction.RL_application_env import RLApplicationEnv
 from selenium.common.exceptions import InvalidSessionIdException, WebDriverException
 from utils import apk_analyzer
 from loguru import logger
@@ -110,6 +112,8 @@ def main():
     my_log = logger.add(os.path.join('logs', 'logger.log'), format="{time} {level} {message}",
                         filter=lambda record: record["level"].name == "INFO" or "ERROR")
 
+    adb_path: str = Utils.get_adb_executable_path()
+
     appium = AppiumLauncher(appium_port)
     if real_device:
         emulator = None
@@ -159,10 +163,9 @@ def main():
                 clicked_buttons = []
                 number_bugs = []
 
-                os.system(f'adb -s {udid} install -t -r {application}')
-                # ! Root access?
+                os.system(f'{adb_path} -s {udid} install -t -r {application}')
                 result = subprocess.run(
-                    ["adb", "shell", "su", "0", "find", "/data/data/", "-type", "d", "-name", f'"{my_package}*"'],
+                    [adb_path, "shell", "su", "0", "find", "/data/data/", "-type", "d", "-name", f'"{my_package}*"'],
                     capture_output=True)
                 package = result.stdout.decode('utf-8').strip('\n').rsplit('/')[-1]
 
@@ -250,7 +253,7 @@ def main():
                         break
             # in order to avoid faulty behavior we uninstall the application
             if package:
-                os.system(f'adb -s {udid} uninstall {package}')
+                os.system(f'{adb_path} -s {udid} uninstall {package}')
     if emulator is not None:
         emulator.terminate()
     appium.terminate()
