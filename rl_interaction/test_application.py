@@ -10,7 +10,7 @@ from algorithms.RandomExploration import RandomAlgorithm
 # from rl_interaction.algorithms.TD3Exploration import TD3Algorithm
 # from rl_interaction.algorithms.TestApp import TestApp
 import pickle
-from utils.utils import AppiumLauncher, EmulatorLauncher
+from utils.utils import AppiumLauncher, EmulatorLauncher, Utils
 from RL_application_env import RLApplicationEnv
 # from rl_interaction.utils.utils import AppiumLauncher, EmulatorLauncher, Utils
 # from rl_interaction.RL_application_env import RLApplicationEnv
@@ -196,7 +196,8 @@ def main():
                                            package=my_package, exported_activities=exported_activities,
                                            services=services, receivers=receivers)
                     if algo == 'TD3':
-                        algorithm = TD3Algorithm()
+                        # algorithm = TD3Algorithm()
+                        pass
                     elif algo == 'random':
                         algorithm = RandomAlgorithm()
                     elif algo == 'SAC':
@@ -204,9 +205,11 @@ def main():
                     elif algo == 'Q':
                         algorithm = QLearnAlgorithm()
                     elif algo == 'DDPG':
-                        algorithm = DDPGAlgorithm()
+                        # algorithm = DDPGAlgorithm()
+                        pass
                     elif algo == 'test':
-                        algorithm = TestApp()
+                        # algorithm = TestApp()
+                        pass
                     flag = algorithm.explore(app, emulator, appium, timesteps, timer, save_policy=save_policy,
                                              reload_policy=reload_policy, app_name=app_name, policy_dir=policy_dir,
                                              cycle=cycle)
