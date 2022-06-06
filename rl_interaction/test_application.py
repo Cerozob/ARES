@@ -68,8 +68,14 @@ def main():
     parser.add_argument('--max_timesteps', type=int, default=250)
     parser.add_argument('--pool_strings', type=str, default='strings.txt')
     parser.add_argument('--trials_per_app', type=int, default=3)
+    parser.add_argument('--method_locations_path', type=str, default="org.sudowars-locations.json")
+    parser.add_argument('--coverage_report_path', type=str, default="coverage_report.json")
 
     args = parser.parse_args()
+
+    method_locations_path = args.method_locations_path
+    coverage_report_path = args.coverage_report_path
+
     save_policy = args.save_policy
     reload_policy = args.reload_policy
     max_trials = args.trials_per_app
@@ -147,6 +153,7 @@ def main():
                 if instr_emma or instr_jacoco:
                     coverage_dir = os.path.join(os.getcwd(), 'coverage', app_name, algo, str(cycle))
                     os.makedirs(coverage_dir, exist_ok=True)
+                
                 # logs dir
                 log_dir = os.path.join(os.getcwd(), 'logs', app_name, algo, str(cycle))
                 os.makedirs(log_dir, exist_ok=True)
@@ -184,6 +191,8 @@ def main():
                                            instr_emma=instr_emma,
                                            instr_jacoco=instr_jacoco,
                                            instr_instruapk=instr_instruapk,
+                                           method_locations=method_locations_path,
+                                           coverage_report=coverage_report_path,
                                            merdoso_button_menu=merdoso_button_menu,
                                            rotation=rotation,
                                            platform_name=platform_name,
@@ -194,7 +203,8 @@ def main():
                                            max_episode_len=max_timesteps,
                                            is_headless=is_headless, appium=appium, emulator=emulator,
                                            package=my_package, exported_activities=exported_activities,
-                                           services=services, receivers=receivers)
+                                           services=services, receivers=receivers
+                                           )
                     if algo == 'TD3':
                         # algorithm = TD3Algorithm()
                         pass

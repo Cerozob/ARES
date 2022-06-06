@@ -91,7 +91,7 @@ class RLApplicationEnv(Env):
 
     def __init__(self, coverage_dict, app_path, list_activities,
                  widget_list, bug_set, coverage_dir, log_dir, rotation, internet, merdoso_button_menu, platform_name,
-                 platform_version, udid, instr_emma, instr_jacoco, instr_instruapk,
+                 platform_version, udid, instr_emma, instr_jacoco, instr_instruapk, method_locations, coverage_report,
                  device_name, exported_activities, services, receivers,
                  is_headless, appium, emulator, package, pool_strings, visited_activities: list, clicked_buttons: list,
                  number_bugs: list, appium_port, max_episode_len=250, string_activities='',
@@ -117,7 +117,7 @@ class RLApplicationEnv(Env):
         # ! This is important
             self.instr = True
             self.logReaderObject = LogReader(package, udid)
-            # self.coverageProcessorObject = CoverageProcessor(udid, package)
+            self.coverageProcessorObject = CoverageProcessor(udid, package, method_locations)
             self.instr_funct = functools.partial(collect_coverage_InstruAPK, self.logReaderObject)
 
         self.rotation = rotation

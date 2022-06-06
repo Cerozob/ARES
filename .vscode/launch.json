@@ -54,7 +54,11 @@
 				"--instr_instruapk", // new custom command to collect coverage using instruapk log lines
 				"--rotation",
 				"--internet",
-				"--real_device"
+				"--real_device",
+				"--method_locations_path",
+				"rl_interaction\\org.sudowars-locations.json",
+				"--coverage_report_path",
+				"rl_interaction\\coverage_report.json"
 			]
 		}
 	]
