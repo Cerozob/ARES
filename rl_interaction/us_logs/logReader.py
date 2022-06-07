@@ -22,6 +22,7 @@ class LogTag(Enum):
     ERROR = "E"
     FATAL = "F"
     SILENT = "S"
+    UNKNOWN = "unknown"
 
 
 class LogLine(object):
@@ -29,15 +30,22 @@ class LogLine(object):
         self.index = index
         self.rawLine = line
         lineComponents = line.strip().split()
-        timestamp = lineComponents[0] if lineComponents[0].isnumeric() else 0
-        self.time = datetime.fromtimestamp(float(timestamp))
-        self.pid = lineComponents[1]
-        self.tid = lineComponents[2]
-        self.tag = LogTag(lineComponents[3])
-        self.message = " ".join(lineComponents[4:])
+        len_line_components = len(lineComponents)
+        timestamp = lineComponents[0]
+        try:
+            self.time = datetime.fromtimestamp(float(timestamp))
+        except ValueError:
+            self.time = 0
+        self.pid = lineComponents[1] if len_line_components > 1 else ""
+        self.tid = lineComponents[2] if len_line_components > 2 else ""
+        self.tag = LogTag(lineComponents[3]) if len_line_components > 3 else LogTag.UNKNOWN
+        self.message = " ".join(lineComponents[4:]) if len_line_components > 4 else ""
+
+    def toJSONSerializableObject(self) -> str:
+        return {"raw": self.rawLine, "index": self.index, "time": self.time.isoformat(), "pid": self.pid, "tid": self.tid, "tag": self.tag.value, "message": self.message}
 
     def __str__(self):
-        return f"{self.index};{self.time};{self.pid};{self.tid};{self.tag.value};{self.message}"
+        return f"{self.index};{self.time};{self.pid};{self.tid};{self.tag};{self.message}"
 
 
 class InstrumentationLine(LogLine):
@@ -52,8 +60,17 @@ class InstrumentationLine(LogLine):
         timestamp = float(lineComponents[-1])/1000
         self.callTime = datetime.fromtimestamp(timestamp)
 
+    def toJSONSerializableObject(self) -> str:
+        baseobject = super().toJSONSerializableObject()
+        baseobject["methodIndex"] = self.methodIndex
+        baseobject["filename"] = self.filename
+        baseobject["methodName"] = self.methodName
+        baseobject["methodParameters"] = self.methodParameters
+        baseobject["callTime"] = self.callTime.isoformat()
+        return baseobject
+
     def __str__(self) -> str:
-        return f"{self.index};{self.time};{self.pid};{self.tid};{self.tag.value};{self.message};{self.methodIndex};{self.filename};{self.methodName};{self.methodParameters};{self.callTime}"
+        return f"{self.index};{self.time};{self.pid};{self.tid};{self.tag};{self.message};{self.methodIndex};{self.filename};{self.methodName};{self.methodParameters};{self.callTime}"
 
 
 class Fault(object):
@@ -64,7 +81,10 @@ class Fault(object):
         for fault in FaultType:
             if fault.value in self.header.message:
                 self.type = fault
-        self.time: datetime = None
+        self.time: datetime = self.header.time
+
+    def toJSONSerializableObject(self) -> str:
+        return {"header": self.header.toJSONSerializableObject(), "lines": [line.toJSONSerializableObject() for line in self.lines], "type": self.type.value, "time": self.time.isoformat()}
 
     def __str__(self) -> str:
         lines = "\n\t".join([str(line) for line in self.lines])
@@ -81,7 +101,6 @@ class LogReader(object):
         self.rawLines, self.instrumentedLines, self.faults = [], [], []
         self.lastCoverageRequest = 0
         self.lastFaultRequest = 0
-
 
     def readLog(self):
         newLines, newInstrumentedLines, newFaults = self.readRawLines(self.getLogLines())
@@ -205,7 +224,6 @@ class LogReader(object):
                 # debugInstrumentedLines.append(logLine)
                 rawLines[-1] = logLine
                 instrumentedLines.append(index)
-
             if faultReading:
                 if any(keyword in logLine.message for keyword in faultReadingKeywords):
                     currentFaultLines.append(logLine)
@@ -222,10 +240,17 @@ class LogReader(object):
 
         return rawLines, instrumentedLines, faults
 
-    def clearLog(self):
-        subprocess.check_output(['adb', 'logcat', '-c'])
-        self.lastBufferPosition = 0
-        return
+    def clearLog(self, clearPhoneLogcat=True, clearFaults=False, clearInstrumentation=False):
+        if clearPhoneLogcat:
+            subprocess.Popen(['adb', 'logcat', '-c'])
+            self.lastBufferPosition = 0
+        if clearFaults:
+            self.faults.clear()
+            self.lastFaultRequest = 0
+        if clearInstrumentation:
+            self.lastInstrumentationRequest = 0
+            self.instrumentedLines.clear()
+            self.rawLines.clear()
 
     def getFaults(self):
         return self.faults

@@ -2,9 +2,9 @@ from pathlib import Path
 import subprocess
 import os
 import json
-from utils.utils import *
 import re
 import sys
+from loguru import logger
 
 INSTRUAPK_SPLIT = "InstruAPK:"
 SEMICOLON_SPLIT = ";;"
@@ -49,13 +49,20 @@ class CoverageProcessor(object):
     def set_logcat_position(self, logcat_line):
         self.logcat_position += logcat_line
 
+    def __read_file_number_of_methods(self, file):
+        pattern = re.compile("\"[0-9]+\":{")
+        text = file.read()
+        lista = re.findall(pattern, text)
+        string_number = lista[-1].replace("\"", "").replace(":", "").replace("{", "")
+        return int(string_number)
+
     def read_number_of_methods_instrumented(self, path=None):
         if path is None:
             path = Path.cwd().joinpath(f"{self.get_apk_package()}-locations.json")
         else:
             path = Path(path)
         with open(path) as file:
-            self.set_methods_instrumented(read_file_number_of_methods(file))
+            self.set_methods_instrumented(self.__read_file_number_of_methods(file))
         file.close()
 
     def clear_logcat(self):
@@ -67,7 +74,7 @@ class CoverageProcessor(object):
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.set_logcat_current(process.stdout)
         self.read_logcat()
-        return coverage_processor.get_number_of_methods_instrumented(), coverage_processor.get_number_methods_called(), coverage_processor.get_coverage_percentage()
+        return self.get_number_of_methods_instrumented(), self.get_number_methods_called(), self.get_coverage_percentage()
 
     def read_logcat(self):
         logcat = self.get_logcat_current()
@@ -90,9 +97,13 @@ class CoverageProcessor(object):
 
     def process_line(self, line):
         pattern = re.compile(INSTRUAPK_SPLIT)
-        line = re.split(pattern, line)[1]
-        values = line.split(SEMICOLON_SPLIT)[1]
-        self.methods_called.add(values)
+        splittedLine = re.split(pattern, line)
+        if len(splittedLine) > 1:
+            line = splittedLine[1]
+            values = line.split(SEMICOLON_SPLIT)[1]
+            self.methods_called.add(values)
+        else:
+            logger.info(f"Instruapk line not processed: {line}")
 
     def get_coverage_percentage(self):
         if self.get_number_of_methods_instrumented() > 0:

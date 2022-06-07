@@ -19,7 +19,7 @@
 			"type": "python",
 			"python": "C:\\Users\\ceroz\\Downloads\\ARES\\venv\\Scripts\\python.exe", // path to python exec, tested on python 3.8.0, 3.9 or 3.10 won't install all deps
 			"request": "launch",
-			"program": "${file}",
+			"program": "${workspaceFolder}\\rl_interaction\\test_application.py",
 			"cwd": "${workspaceFolder}",
 			"console": "integratedTerminal",
 			"justMyCode": true,
@@ -58,7 +58,7 @@
 				"--method_locations_path",
 				"rl_interaction\\org.sudowars-locations.json",
 				"--coverage_report_path",
-				"rl_interaction\\coverage_report.json"
+				".\\rl_interaction\\reports\\"
 			]
 		}
 	]

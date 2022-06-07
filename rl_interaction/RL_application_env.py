@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 import re
 from gym import Env
 import os
@@ -43,16 +45,35 @@ def collect_coverage_jacoco(udid, package, coverage_dir, coverage_count):
     os.system(f'{adb_path} -s {udid} pull /sdcard/Android/data/{package}/files/coverage.ec '
               f'{os.path.join(".", coverage_dir, str(coverage_count))}.ec')
 
+
 # ! This is important
-def collect_coverage_InstruAPK(logReaderObject, udid, package, coverage_dir=None, coverage_count=None):
+def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, udid, package, coverage_dir: Path, coverage_count):
     logReaderObject.readLog()
-    newInstrumentedLines = logReaderObject.getNewInstrumentedLines()
+    newFaults = logReaderObject.getNewFaults()
+    numberOfInstrumentedMethods, numberofCalledMethods, coveragePercentage = coverageProcessorObject.generate_adb_logcat()
+    calledMethods = coverageProcessorObject.get_methods_id_called()
+    jsonserializablefaults = [fault.toJSONSerializableObject() for fault in newFaults]
     # for now, just print the lines found
-    if newInstrumentedLines:
-        print('New instrumented lines:')
-        for line in newInstrumentedLines:
-            print(line)
-    # TODO collect them and save them to a file, plus the new coverage count
+    logger.info(f"current coverage status:")
+    logger.info(f"{coveragePercentage}%")
+    logger.info(f"{numberOfInstrumentedMethods} instrumented methods")
+    logger.info(f"{numberofCalledMethods} called methods")
+    logger.info(f"{len(newFaults)} new faults")
+    # coverage report generation in json format
+    report_file = coverage_dir.joinpath(f"report_{udid}_{package}_{coverage_count}.json")
+    report_object = {
+                        "coveragePercentage": coveragePercentage,
+                        "numberOfInstrumentedMethods": numberOfInstrumentedMethods,
+                        "numberOfCalledMethods": numberofCalledMethods,
+                        "calledMethods": list(calledMethods),
+                        "newFaults": jsonserializablefaults,
+                    }
+    if not report_file.exists():
+        report_file.touch()
+    with open(report_file, 'w') as report:
+        report.write(json.dumps(report_object))
+    return
+
 
 # ! This is important
 def bug_handler_InstruAPK(logReaderObject, bug_queue, udid):
@@ -60,9 +81,9 @@ def bug_handler_InstruAPK(logReaderObject, bug_queue, udid):
         logReaderObject.readLog()
         newFaults = logReaderObject.getNewFaults()
         if newFaults:
-            print('New faults:')
+            logger.debug('New faults identified, adding to bug queue')
             for fault in newFaults:
-                print(fault)
+                # print(fault)
                 bug_queue.put(str(fault))
 
 
@@ -114,11 +135,11 @@ class RLApplicationEnv(Env):
             self.instr = True
             self.instr_funct = collect_coverage_jacoco
         elif instr_instruapk:
-        # ! This is important
+            # ! This is important
             self.instr = True
             self.logReaderObject = LogReader(package, udid)
             self.coverageProcessorObject = CoverageProcessor(udid, package, method_locations)
-            self.instr_funct = functools.partial(collect_coverage_InstruAPK, self.logReaderObject)
+            self.instr_funct = functools.partial(collect_coverage_InstruAPK, self.logReaderObject, self.coverageProcessorObject)
 
         self.rotation = rotation
         self.internet = internet

@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+from pathlib import Path
 import warnings
 
 # from rl_interaction.algorithms.DDPGExploration import DDPGAlgorithm
@@ -69,12 +70,18 @@ def main():
     parser.add_argument('--pool_strings', type=str, default='strings.txt')
     parser.add_argument('--trials_per_app', type=int, default=3)
     parser.add_argument('--method_locations_path', type=str, default="org.sudowars-locations.json")
-    parser.add_argument('--coverage_report_path', type=str, default="coverage_report.json")
+    parser.add_argument('--coverage_report_path', type=str, default="./reports/")
 
     args = parser.parse_args()
 
     method_locations_path = args.method_locations_path
-    coverage_report_path = args.coverage_report_path
+
+    coverage_report_path = Path(args.coverage_report_path)
+
+    if not coverage_report_path.exists():
+        coverage_report_path.mkdir(parents=True, exist_ok=True)
+    if coverage_report_path.is_file():
+        coverage_report_path = coverage_report_path.parent
 
     save_policy = args.save_policy
     reload_policy = args.reload_policy
@@ -145,6 +152,7 @@ def main():
             ready = False
         if ready:
             package = None
+            
             while cycle < N:
                 logger.info(f'app: {app_name}, test {cycle} of {N} starting')
                 # coverage dir
@@ -153,7 +161,8 @@ def main():
                 if instr_emma or instr_jacoco:
                     coverage_dir = os.path.join(os.getcwd(), 'coverage', app_name, algo, str(cycle))
                     os.makedirs(coverage_dir, exist_ok=True)
-                
+                if instr_instruapk:
+                    coverage_dir = coverage_report_path
                 # logs dir
                 log_dir = os.path.join(os.getcwd(), 'logs', app_name, algo, str(cycle))
                 os.makedirs(log_dir, exist_ok=True)
@@ -249,6 +258,7 @@ def main():
                     logger.remove(app.bug_logger_id)
                     # save_pickles(algo, app_name, cycle, clicked_buttons, visited_activities, number_bugs, bug_set)
                     logger.info(f'app: {app_name}, test {cycle} of {N} ending\n')
+                    lkasjdkdjsad
                     cycle += 1
                 else:
                     trial += 1
