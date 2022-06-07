@@ -98,16 +98,16 @@ class LogReader(object):
         # self.apkFilePath = apkPath
         self.apkPid = None
         self.lastBufferPosition = 0
-        self.rawLines, self.instrumentedLines, self.faults = [], [], []
+        self.rawLines, self.instrumentationLines, self.faults = [], [], []
         self.lastCoverageRequest = 0
         self.lastFaultRequest = 0
 
     def readLog(self):
-        newLines, newInstrumentedLines, newFaults = self.readRawLines(self.getLogLines())
+        newLines, newInstrumentationLines, newFaults = self.readRawLines(self.getLogLines())
         self.rawLines += newLines
-        self.instrumentedLines += newInstrumentedLines
+        self.instrumentationLines += newInstrumentationLines
         self.faults += newFaults
-        return self.rawLines, self.instrumentedLines, self.faults
+        return self.rawLines, self.instrumentationLines, self.faults
 
     def runReadCommand(self, command):
         logCollect = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -201,8 +201,8 @@ class LogReader(object):
         faultReading = False
         currentFaultLines: list[LogLine] = []
         faults: list[Fault] = []
-        # debugInstrumentedLines: list[InstrumentationLine] = []
-        instrumentedLines: list[int] = []
+        # debugInstrumentationLines: list[InstrumentationLine] = []
+        instrumentationLines: list[int] = []
         rawLines: list[LogLine] = []
         # line example
         #         1651079062.458 11732 11798 I ProviderInstaller: Installed default security provider GmsCore_OpenSSL
@@ -221,9 +221,8 @@ class LogReader(object):
             rawLines.append(logLine)
             if logLine.message.startswith("InstruAPK"):
                 logLine = InstrumentationLine(line, index)
-                # debugInstrumentedLines.append(logLine)
                 rawLines[-1] = logLine
-                instrumentedLines.append(index)
+                instrumentationLines.append(index)
             if faultReading:
                 if any(keyword in logLine.message for keyword in faultReadingKeywords):
                     currentFaultLines.append(logLine)
@@ -238,7 +237,7 @@ class LogReader(object):
                 currentFaultLines.append(logLine)
             index += 1
 
-        return rawLines, instrumentedLines, faults
+        return rawLines, instrumentationLines, faults
 
     def clearLog(self, clearPhoneLogcat=True, clearFaults=False, clearInstrumentation=False):
         if clearPhoneLogcat:
@@ -248,16 +247,22 @@ class LogReader(object):
             self.faults.clear()
             self.lastFaultRequest = 0
         if clearInstrumentation:
-            self.lastInstrumentationRequest = 0
-            self.instrumentedLines.clear()
+            self.lastCoverageRequest = 0
+            self.instrumentationLines.clear()
             self.rawLines.clear()
+        else:
+            for lineindex in range(len(self.rawLines)-1, -1, -1):
+                if not isinstance(self.rawLines[lineindex], InstrumentationLine):
+                    del self.rawLines[lineindex]
+            self.instrumentationLines = list(range(len(self.rawLines)))
+        return
 
     def getFaults(self):
         return self.faults
 
-    def getInstrumentedLines(self):
+    def getInstrumentationLines(self):
         lines: list[InstrumentationLine] = []
-        for line in self.instrumentedLines:
+        for line in self.instrumentationLines:
             lines.append(self.rawLines[line])
         return lines
 
@@ -266,11 +271,11 @@ class LogReader(object):
         self.lastFaultRequest = len(self.faults)
         return newFaults
 
-    def getNewInstrumentedLines(self):
+    def getNewInstrumentationLines(self):
         newLines: list[InstrumentationLine] = []
-        for line in self.instrumentedLines[self.lastCoverageRequest:]:
+        for line in self.instrumentationLines[self.lastCoverageRequest:]:
             newLines.append(self.rawLines[line])
-        self.lastCoverageRequest = len(self.instrumentedLines)
+        self.lastCoverageRequest = len(self.instrumentationLines)
         return newLines
 
 
@@ -278,16 +283,16 @@ if __name__ == "__main__":
     packageName = sys.argv[1]
     deviceSerial = sys.argv[2] if len(sys.argv) > 2 else None
     logReader = LogReader(packageName, deviceSerial)
-    # logReader.clearLog()
+    logReader.clearLog()
     # for testing
     # while True:
-    #     rawLines, instrumentedLines, faults = logReader.readLog()
+    #     rawLines, instrumentationLines, faults = logReader.readLog()
     #     if len(rawLines) > 0:
     #         print(rawLines[0])
     #         print(rawLines[-1])
-    #     if len(instrumentedLines) > 0:
-    #         print(instrumentedLines[0])
-    #         print(instrumentedLines[-1])
+    #     if len(instrumentationLines) > 0:
+    #         print(instrumentationLines[0])
+    #         print(instrumentationLines[-1])
     #     if len(faults) > 0:
     #         print(faults[0])
     #         print(faults[-1])
