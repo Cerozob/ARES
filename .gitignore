@@ -93,3 +93,4 @@ algorithms/__pycache__/*
 *.pyc
 *.pyc
 .old/
+*.json
