@@ -28,10 +28,10 @@
 				"SAC", // todo try with ddpg to compare
 				"--appium_port",
 				"4270",
-				"--timesteps",
-				"5000",
+				"--timer",
+				"30",
 				"--iterations",
-				"2",
+				"1",
 				"--udid",
 				"49296d9c", // device serial
 				"--android_port",
@@ -42,10 +42,9 @@
 				"rl_interaction\\apps\\org.sudowars_2-aligned-debugSigned.apk", // relative path to apk file
 				"--max_timesteps",
 				"250",
+				"--save_policy",
 				"--pool_strings",
 				"rl_interaction\\strings.txt",
-				"--timer",
-				"70",
 				"--platform_version",
 				"11.0", // device's android version
 				"--trials_per_app",

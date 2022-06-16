@@ -2,9 +2,12 @@ import argparse
 import logging
 import os
 from pathlib import Path
+from re import sub
+import time
 import warnings
 
 # from rl_interaction.algorithms.DDPGExploration import DDPGAlgorithm
+from algorithms.DDPGExploration import DDPGAlgorithm
 from algorithms.QLearnExploration import QLearnAlgorithm
 from algorithms.SACExploration import SACAlgorithm
 from algorithms.RandomExploration import RandomAlgorithm
@@ -77,6 +80,9 @@ def main():
     method_locations_path = args.method_locations_path
 
     coverage_report_path = Path(args.coverage_report_path)
+
+    get_ime_command = f"{adb_path} -s {args.udid} shell settings get secure default_input_method"
+    current_IME = subprocess.check_output(get_ime_command, shell=True).decode("utf-8")
 
     if not coverage_report_path.exists():
         coverage_report_path.mkdir(parents=True, exist_ok=True)
@@ -201,6 +207,7 @@ def main():
                                            instr_jacoco=instr_jacoco,
                                            instr_instruapk=instr_instruapk,
                                            method_locations=method_locations_path,
+                                           timer_start=time.time(),
                                            coverage_report=coverage_report_path,
                                            merdoso_button_menu=merdoso_button_menu,
                                            rotation=rotation,
@@ -224,7 +231,7 @@ def main():
                     elif algo == 'Q':
                         algorithm = QLearnAlgorithm()
                     elif algo == 'DDPG':
-                        # algorithm = DDPGAlgorithm()
+                        algorithm = DDPGAlgorithm()
                         pass
                     elif algo == 'test':
                         # algorithm = TestApp()
@@ -258,7 +265,6 @@ def main():
                     logger.remove(app.bug_logger_id)
                     # save_pickles(algo, app_name, cycle, clicked_buttons, visited_activities, number_bugs, bug_set)
                     logger.info(f'app: {app_name}, test {cycle} of {N} ending\n')
-                    lkasjdkdjsad
                     cycle += 1
                 else:
                     trial += 1
@@ -280,6 +286,8 @@ def main():
     if emulator is not None:
         emulator.terminate()
     appium.terminate()
+    restore_ime_command = f'{adb_path} -s {udid} shell ime set {current_IME}'
+    os.system(restore_ime_command)
     return 0
 
 
