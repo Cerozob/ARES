@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 import subprocess
 
-dev1 = ("49296d9c","mi9","11.0",4270,5558)
+dev1 = ("******","mi9","11.0",4270,5558)
 dev2 = ("emulator-5554","avd1","11.0",4273,5554)
 dev3 = ("emulator-5556","avd2","11.0",4277,5556)
-dev4 =("ZL5224KNSK","motoe","8.0",4276,5560)
+dev4 =("********","motoe","8.0",4276,5560)
 
 alg1="SAC"
 alg2="DDPG"
