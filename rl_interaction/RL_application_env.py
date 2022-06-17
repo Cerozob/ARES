@@ -47,7 +47,7 @@ def collect_coverage_jacoco(udid, package, coverage_dir, coverage_count):
 
 
 # ! This is important
-def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_start, udid, package, coverage_dir: Path, coverage_count):
+def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_start, algorithm, udid, package, coverage_dir: Path, coverage_count):
     logReaderObject.readLog()
     newFaults = logReaderObject.getNewFaults()
     numberOfInstrumentedMethods, numberofCalledMethods, coveragePercentage = coverageProcessorObject.generate_adb_logcat()
@@ -64,6 +64,7 @@ def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_st
     today = time.strftime("%Y-%m-%d %H-%M-%S")
     report_file = coverage_dir.joinpath(f"report_{udid}_{package}_{coverage_count}_{today}.json")
     report_object = {
+                        "Algorithm": algorithm,
                         "total_time_taken": time_taken,
                         "coveragePercentage": coveragePercentage,
                         "numberOfInstrumentedMethods": numberOfInstrumentedMethods,
@@ -115,7 +116,7 @@ class RLApplicationEnv(Env):
 
     def __init__(self, coverage_dict, app_path, list_activities,
                  widget_list, bug_set, coverage_dir, log_dir, rotation, internet, merdoso_button_menu, platform_name,
-                 platform_version, udid, instr_emma, instr_jacoco, instr_instruapk, method_locations, timer_start, coverage_report,
+                 platform_version, udid, instr_emma, instr_jacoco, instr_instruapk, method_locations, timer_start, algo, coverage_report,
                  device_name, exported_activities, services, receivers,
                  is_headless, appium, emulator, package, pool_strings, visited_activities: list, clicked_buttons: list,
                  number_bugs: list, appium_port, max_episode_len=250, string_activities='',
@@ -143,7 +144,7 @@ class RLApplicationEnv(Env):
             self.instr = True
             self.logReaderObject = LogReader(package, udid)
             self.coverageProcessorObject = CoverageProcessor(udid, package, method_locations)
-            self.instr_funct = functools.partial(collect_coverage_InstruAPK, self.logReaderObject, self.coverageProcessorObject, self.timer_start)
+            self.instr_funct = functools.partial(collect_coverage_InstruAPK, self.logReaderObject, self.coverageProcessorObject, self.timer_start, algo)
         self.rotation = rotation
         self.internet = internet
         self.merdoso_button_menu = merdoso_button_menu

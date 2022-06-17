@@ -59,7 +59,7 @@ def main():
     parser.add_argument('--rotation', default=False, action='store_true')
     parser.add_argument('--internet', default=False, action='store_true')
     parser.add_argument('--menu', default=False, action='store_true')
-    parser.add_argument('--algo', choices=['SAC', 'random', 'Q'], type=str, required=True)
+    parser.add_argument('--algo', choices=['SAC', 'random', 'Q', 'DDPG'], type=str, required=True)
     parser.add_argument('--emu', choices=['normal', 'headless'], type=str, required=False, default='normal')
     parser.add_argument('--appium_port', type=int, required=True)
     parser.add_argument('--platform_name', choices=['Android', 'iOS'], type=str, default='Android')
@@ -76,6 +76,8 @@ def main():
     parser.add_argument('--coverage_report_path', type=str, default="./reports/")
 
     args = parser.parse_args()
+
+    adb_path: str = Utils.get_adb_executable_path()
 
     method_locations_path = args.method_locations_path
 
@@ -131,7 +133,6 @@ def main():
     my_log = logger.add(os.path.join('logs', 'logger.log'), format="{time} {level} {message}",
                         filter=lambda record: record["level"].name == "INFO" or "ERROR")
 
-    adb_path: str = Utils.get_adb_executable_path()
 
     appium = AppiumLauncher(appium_port)
     if real_device:
@@ -208,6 +209,7 @@ def main():
                                            instr_instruapk=instr_instruapk,
                                            method_locations=method_locations_path,
                                            timer_start=time.time(),
+                                           algo=algo,
                                            coverage_report=coverage_report_path,
                                            merdoso_button_menu=merdoso_button_menu,
                                            rotation=rotation,
@@ -236,6 +238,7 @@ def main():
                     elif algo == 'test':
                         # algorithm = TestApp()
                         pass
+                    logger.debug("save_policy value: {}".format(save_policy))
                     flag = algorithm.explore(app, emulator, appium, timesteps, timer, save_policy=save_policy,
                                              reload_policy=reload_policy, app_name=app_name, policy_dir=policy_dir,
                                              cycle=cycle)
@@ -286,7 +289,8 @@ def main():
     if emulator is not None:
         emulator.terminate()
     appium.terminate()
-    restore_ime_command = f'{adb_path} -s {udid} shell ime set {current_IME}'
+    # restore_ime_command = f'{adb_path} -s {udid} shell ime set {current_IME}'
+    restore_ime_command = f'{adb_path} -s {udid} shell ime set com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME'
     os.system(restore_ime_command)
     return 0
 

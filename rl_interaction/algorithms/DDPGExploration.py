@@ -15,8 +15,8 @@ logger = logging.getLogger("Traning")
 class DDPGAlgorithm(ExplorationAlgorithm):
 
     @staticmethod
-    def explore(app, adapter, timesteps, timer, save_policy=False, app_name='', reload_policy=False,
-                policy_dir='.', cycle=0, train_freq=5, **kwargs):
+    def explore(app, emulator, appium, timesteps, timer, save_policy=False, app_name='', reload_policy=False,
+                policy_dir='.', cycle=0, train_freq=5, target_update_interval=10, **kwargs):
         try:
             env = TimeFeatureWrapper(app)
             # Loading a previous policy and checking file existence
@@ -37,15 +37,15 @@ class DDPGAlgorithm(ExplorationAlgorithm):
             # It will overwrite the previous policy
 
             if save_policy:
-                logger.info('Saving Policy...')
-                model.action_space.high[0] = model.env.envs[0].ACTION_SPACE
-                model.save(f'{policy_dir}{os.sep}{app_name}')
+                # logger.info('Saving Policy...')
+                # model.action_space.high[0] = model.env.envs[0].ACTION_SPACE
+                # model.save(f'{policy_dir}{os.sep}{app_name}')
                 pass
 
             return True
         except Exception as e:
             print(e)
             # appium.restart_appium()
-            if adapter is not None:
-                adapter.restart()
+            # if adapter is not None:
+            #     adapter.restart()
             return False

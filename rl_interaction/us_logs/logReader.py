@@ -38,7 +38,10 @@ class LogLine(object):
             self.time = 0
         self.pid = lineComponents[1] if len_line_components > 1 else ""
         self.tid = lineComponents[2] if len_line_components > 2 else ""
-        self.tag = LogTag(lineComponents[3]) if len_line_components > 3 else LogTag.UNKNOWN
+        try:
+            self.tag = LogTag(lineComponents[3]) if len_line_components > 3 else LogTag.UNKNOWN
+        except ValueError:
+            self.tag = LogTag.UNKNOWN
         self.message = " ".join(lineComponents[4:]) if len_line_components > 4 else ""
 
     def toJSONSerializableObject(self) -> str:

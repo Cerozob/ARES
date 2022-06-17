@@ -25,7 +25,7 @@
 			"justMyCode": true,
 			"args": [
 				"--algo",
-				"SAC", // todo try with ddpg to compare
+				"DDPG", // todo try with ddpg to compare
 				"--appium_port",
 				"4270",
 				"--timer",
