@@ -1,0 +1,52 @@
+python rl_interaction\test_application.py 
+--algo 
+--appium_port 4270 
+--iterations 1 
+--udid 
+--android_port 5554 
+--device_name mi9 
+--apps rl_interaction\\apps\\org.sudowars_2-aligned-debugSigned.apk 
+--max_max_timesteps 250  250
+--pool_strings rl_interaction\\strings.txt 
+--timer 15 
+--platform_version 11.0 
+--trials_per_app 3 
+--menu 
+--instr_instruapk 
+--rotation 
+--internet 
+--real_device 
+--method_locations_path rl_interaction\\org.sudowars-locations.json 
+--coverage_report_path .\\rl_interaction\\reports\\
+
+fullcmd:
+
+SAC
+
+python rl_interaction\parallel_exec.py --instr_instruapk --real_device --udids "49296d9c ZL5224KNSK emulator-5554" --list_device "mi9 motoe avd1" --appium_ports "4310 4290 4270" --android_ports "5556 5558 5554" --path ".\rl_interaction\apps\\" --rotation --internet --platform_version 11.0 --iterations 1 --algo SAC --timer 30 --trials_per_app 3 --max_timesteps 250 --timesteps 100 --pool_strings ".\rl_interaction\strings.txt" --method_locations_path ".\rl_interaction\org.sudowars-locations.json" --coverage_report_path ".\rl_interaction\reports\\"
+
+DDPG
+
+python rl_interaction\parallel_exec.py --instr_instruapk --real_device --udids "49296d9c ZL5224KNSK emulator-5554" --list_device "mi9 motoe avd1" --appium_ports "4310 4290 4270" --android_ports "5556 5558 5554" --path ".\rl_interaction\apps\\" --rotation --internet --platform_version 11.0 --iterations 1 --algo DDPG --timer 30 --trials_per_app 3 --max_timesteps 250 --timesteps 100 --pool_strings ".\rl_interaction\strings.txt" --method_locations_path ".\rl_interaction\org.sudowars-locations.json" --coverage_report_path ".\rl_interaction\reports\\"
+
+Qlearn
+
+python rl_interaction\parallel_exec.py --instr_instruapk --real_device --udids "49296d9c ZL5224KNSK emulator-5554" --list_device "mi9 motoe avd1" --appium_ports "4310 4290 4270" --android_ports "5556 5558 5554" --path ".\rl_interaction\apps\\" --rotation --internet --platform_version 11.0 --iterations 1 --algo Q --timer 30 --trials_per_app 3 --max_timesteps 250 --timesteps 100 --pool_strings ".\rl_interaction\strings.txt" --method_locations_path ".\rl_interaction\org.sudowars-locations.json" --coverage_report_path ".\rl_interaction\reports\\"
+
+Random
+
+python rl_interaction\parallel_exec.py --instr_instruapk --real_device --udids "49296d9c ZL5224KNSK emulator-5554" --list_device "mi9 motoe avd1" --appium_ports "4310 4290 4270" --android_ports "5556 5558 5554" --path ".\rl_interaction\apps\\" --rotation --internet --platform_version 11.0 --iterations 1 --algo random --timer 30 --trials_per_app 3 --max_timesteps 250 --timesteps 100 --pool_strings ".\rl_interaction\strings.txt" --method_locations_path ".\rl_interaction\org.sudowars-locations.json" --coverage_report_path ".\rl_interaction\reports\\"
+
+testing checklist for test_application:
+
+serials:
+
+emulator-5554 -> Pixel 6 AVD Android 11.0
+49296d9c -> Physical Xiaomi Mi 9 Android 11.0
+ZL5224KNSK -> Physical Motorols moto e5 plus Android 8.0.0
+
+algorithms used:
+DDPG
+SAC
+Qlearn
+Random

@@ -1,5 +1,6 @@
 import glob
 import os
+from pathlib import Path
 import platform
 import subprocess
 import argparse
@@ -9,7 +10,11 @@ from itertools import zip_longest
 def close_old_appium_services():
     system = platform.system()
     if system == 'Windows':
-        os.system('taskkill /f /im node.exe')
+        try:
+            subprocess.call(['taskkill', '/F', '/IM', 'node.exe'])
+            print('Closed old appium services')
+        except Exception as e:
+            print(e)
     else:
         os.system('killall node')
         os.system('adb start-server')
@@ -22,6 +27,7 @@ def main():
     # put --instr flag in case you want to collect code coverage
     parser.add_argument('--instr_jacoco', default=False, action='store_true')
     parser.add_argument('--instr_emma', default=False, action='store_true')
+    parser.add_argument('--instr_instruapk', default=False, action='store_true')
     # parameter to use in case you want to save the policy
     parser.add_argument('--save_policy', default=False, action='store_true')
     parser.add_argument('--reload_policy', default=False, action='store_true')
@@ -39,7 +45,7 @@ def main():
     # how many times do you want to repeat the test ?
     parser.add_argument('--iterations', type=int, default=10)
     # choose one
-    parser.add_argument('--algo', choices=['SAC', 'random', 'Q'], type=str, required=True)
+    parser.add_argument('--algo', choices=['SAC', 'random', 'Q',"DDPG"], type=str, required=True)
     # in case you want to test using timesteps
     parser.add_argument('--timesteps', type=int, required=True)
     # enable if you want to use rotation
@@ -53,6 +59,8 @@ def main():
     # file of strings.txt (one string per line)
     parser.add_argument('--pool_strings', type=str, default='strings.txt')
     parser.add_argument('--trials_per_app', type=str, default=3)
+    parser.add_argument('--method_locations_path', type=str, default="org.sudowars-locations.json")
+    parser.add_argument('--coverage_report_path', type=str, default="./reports/")
 
     args = parser.parse_args()
     algo = args.algo
@@ -61,6 +69,7 @@ def main():
     reload_policy = args.reload_policy
     instr_jacoco = args.instr_jacoco
     instr_emma = args.instr_emma
+    instr_instruapk = args.instr_instruapk
     if instr_emma and instr_jacoco:
         raise AssertionError
     rot = args.rotation
@@ -94,19 +103,26 @@ def main():
         for port in android_ports:
             udids.append(f'emulator-{port}')
 
+    # print everyting to the console
     # Set app path
     processes = []
     for i in range(len(device_names)):
-        # it searches a venv
-        py = os.path.join(__file__, os.pardir, os.pardir, 'venv', 'bin', 'python')
-        py = os.path.abspath(py)
-        script = os.path.abspath(os.path.join(__file__, os.pardir, 'test_application.py'))
+        
+        app = Path(app_lists[i])
+        covreport = Path(args.coverage_report_path)
+        methodlocs = Path(args.method_locations_path)
+        pool = Path(pool_strings)
+        
+        py = "python"
+        script = 'rl_interaction\\test_application.py'
         cmd = [py, script, '--algo', algo, '--appium_port',
                str(appium_ports[i]), '--timesteps', str(timesteps), '--iterations', str(iterations),
                '--udid', str(udids[i]), '--android_port', str(android_ports[i]), '--device_name', device_names[i],
-               '--apps', f'{app_lists[i]}', '--max_timesteps', str(max_timesteps), '--pool_strings', pool_strings,
+               '--apps', str(app.resolve()), '--max_timesteps', str(max_timesteps), '--pool_strings', str(pool.resolve()),
                '--timer', str(timer), '--platform_version', android_v, '--trials_per_app', str(trials_per_app),
                '--menu']
+
+        
         if emu is not None:
             cmd = cmd + ['--emu', emu]
         if instr_jacoco:
@@ -123,9 +139,35 @@ def main():
             cmd.append('--reload_policy')
         if real_device:
             cmd.append('--real_device')
+        if instr_instruapk:
+            cmd.append('--instr_instruapk')
+        cmd.append('--method_locations_path')
+        cmd.append(str(methodlocs.resolve()))
+        cmd.append('--coverage_report_path')
+        cmd.append(str(covreport.resolve())+"\\")
 
+        
+        if app.is_file():
+            print(f'{device_names[i]} is running {app.absolute()}')
+        else:
+            print(f'path {app.absolute()} not found')
+        if pool.is_file():
+            print(f'{device_names[i]} is running {pool.absolute()}')
+        else:
+            print(f'path {pool.absolute()} not found')
+        if covreport.is_dir():
+            print(f'{device_names[i]} is running {covreport.absolute()}')
+        else:
+            print(f'path {covreport.absolute()} not found')
+        if methodlocs.is_file():
+            print(f'{device_names[i]} is running {methodlocs.absolute()}')
+        else:
+            print(f'path {methodlocs.absolute()} not found')
+        
         print(cmd)
-        processes.append(subprocess.Popen(cmd))
+        # stdout = subprocess.check_output(cmd, cwd=os.getcwd(), shell=True)
+        # print(process.decode('utf-8'))
+        processes.append(subprocess.Popen(cmd, cwd=os.getcwd(), shell=True))
 
     exit_codes = [p.wait() for p in processes]
 

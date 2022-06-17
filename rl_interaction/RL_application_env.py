@@ -62,7 +62,7 @@ def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_st
     # coverage report generation in json format
     time_taken = time.time() - time_start
     today = time.strftime("%Y-%m-%d %H-%M-%S")
-    report_file = coverage_dir.joinpath(f"report_{udid}_{package}_{coverage_count}_{today}.json")
+    report_file = coverage_dir.joinpath(f"report_{udid}_{package}_{coverage_count}_{today}_{algorithm}.json")
     report_object = {
                         "Algorithm": algorithm,
                         "total_time_taken": time_taken,
