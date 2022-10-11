@@ -37,7 +37,8 @@ def search_package_and_setprop(folder):
 
 def collect_coverage_emma(udid, package, coverage_dir, coverage_count):
     os.system(f'{adb_path} -s {udid} shell am broadcast -p {package} -a edu.gatech.m3.emma.COLLECT_COVERAGE')
-    os.system(f'{adb_path} -s {udid} pull /mnt/sdcard/coverage.ec {os.path.join(".", coverage_dir, str(coverage_count))}.ec')
+    os.system(
+        f'{adb_path} -s {udid} pull /mnt/sdcard/coverage.ec {os.path.join(".", coverage_dir, str(coverage_count))}.ec')
 
 
 def collect_coverage_jacoco(udid, package, coverage_dir, coverage_count):
@@ -47,7 +48,8 @@ def collect_coverage_jacoco(udid, package, coverage_dir, coverage_count):
 
 
 # ! This is important
-def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_start, algorithm, udid, package, coverage_dir: Path, coverage_count):
+def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_start, algorithm, udid, package,
+                               coverage_dir: Path, coverage_count):
     logReaderObject.readLog()
     newFaults = logReaderObject.getNewFaults()
     numberOfInstrumentedMethods, numberofCalledMethods, coveragePercentage = coverageProcessorObject.generate_adb_logcat()
@@ -64,14 +66,14 @@ def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_st
     today = time.strftime("%Y-%m-%d %H-%M-%S")
     report_file = coverage_dir.joinpath(f"report_{udid}_{package}_{coverage_count}_{today}_{algorithm}.json")
     report_object = {
-                        "Algorithm": algorithm,
-                        "total_time_taken": time_taken,
-                        "coveragePercentage": coveragePercentage,
-                        "numberOfInstrumentedMethods": numberOfInstrumentedMethods,
-                        "numberOfCalledMethods": numberofCalledMethods,
-                        "calledMethods": list(calledMethods),
-                        "newFaults": jsonserializablefaults
-                    }
+        "Algorithm": algorithm,
+        "total_time_taken": time_taken,
+        "coveragePercentage": coveragePercentage,
+        "numberOfInstrumentedMethods": numberOfInstrumentedMethods,
+        "numberOfCalledMethods": numberofCalledMethods,
+        "calledMethods": list(calledMethods),
+        "newFaults": jsonserializablefaults
+    }
     if not report_file.exists():
         report_file.touch()
     with open(report_file, 'w') as report:
@@ -116,7 +118,8 @@ class RLApplicationEnv(Env):
 
     def __init__(self, coverage_dict, app_path, list_activities,
                  widget_list, bug_set, coverage_dir, log_dir, rotation, internet, merdoso_button_menu, platform_name,
-                 platform_version, udid, instr_emma, instr_jacoco, instr_instruapk, method_locations, timer_start, algo, coverage_report,
+                 platform_version, udid, instr_emma, instr_jacoco, instr_instruapk, method_locations, timer_start, algo,
+                 coverage_report,
                  device_name, exported_activities, services, receivers,
                  is_headless, appium, emulator, package, pool_strings, visited_activities: list, clicked_buttons: list,
                  number_bugs: list, appium_port, max_episode_len=250, string_activities='',
@@ -144,7 +147,8 @@ class RLApplicationEnv(Env):
             self.instr = True
             self.logReaderObject = LogReader(package, udid)
             self.coverageProcessorObject = CoverageProcessor(udid, package, method_locations)
-            self.instr_funct = functools.partial(collect_coverage_InstruAPK, self.logReaderObject, self.coverageProcessorObject, self.timer_start, algo)
+            self.instr_funct = functools.partial(collect_coverage_InstruAPK, self.logReaderObject,
+                                                 self.coverageProcessorObject, self.timer_start, algo)
         self.rotation = rotation
         self.internet = internet
         self.merdoso_button_menu = merdoso_button_menu
@@ -198,7 +202,7 @@ class RLApplicationEnv(Env):
                              'deviceName': device_name,
                              'app': self.app_path,
                              'autoGrantPermissions': True,
-                             'fullReset': False,
+                             'fullReset': True,
                              'unicodeKeyboard': True,
                              'resetKeyboard': True,
                              'androidInstallTimeout': 30000,
@@ -242,6 +246,7 @@ class RLApplicationEnv(Env):
             if action_number[0] >= self.get_action_space()[0]:
                 return self.observation, numpy.array([-50.0]), numpy.array(False), {}
             else:
+                logger.debug(F'<--- EPISODE {self.coverage_count} STEP {self.timesteps} --->')
                 self.timesteps += 1
                 return self.step2(action_number)
         except StaleElementReferenceException:
@@ -310,7 +315,7 @@ class RLApplicationEnv(Env):
         self.get_observation()
         reward = self.compute_reward()
         # self.append_visited_activities_coverage()
-        done = self._termination()
+        done = self.termination()
         return self.observation, numpy.array([reward]), numpy.array(done), {}
 
     def action(self, current_view, action_number):
@@ -369,6 +374,12 @@ class RLApplicationEnv(Env):
 
     def reset(self):
         logger.debug('<--- EPISODE RESET --->')
+
+        if self.coverage_count != 0:
+            self.instr_funct(udid=self.udid, package=self.package, coverage_dir=self.coverage_dir,
+                             coverage_count=self.coverage_count)
+        self.coverage_count += 1
+
         self._md5 = ''
         self.timesteps = 0
         '''
@@ -402,6 +413,7 @@ class RLApplicationEnv(Env):
         except Exception as e:
             logger.critical(e)
             self.manager(e)
+        self.coverageProcessorObject.reset()
         self.current_activity = self.rename_activity(self.driver.current_activity)
         self.old_activity = self.current_activity
         self.set_activities_episode = {self.current_activity}
@@ -538,7 +550,7 @@ class RLApplicationEnv(Env):
         self.clicked_buttons.append(pressed_buttons)
         self.number_bugs.append(len(self.bug_set))
 
-    def _termination(self):
+    def termination(self):
         if (self.timesteps >= self._max_episode_steps) or self.bug or self.outside:
             self.bug = False
             self.outside = False

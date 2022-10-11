@@ -60,10 +60,10 @@ class TimerCallback(BaseCallback):
                                      coverage_count=self.app.coverage_count)
             return False
         elif self.app.instr:
-            if (self.num_timesteps % 25) == 0:
-                self.app.coverage_count += 1
-                self.app.instr_funct(udid=self.app.udid, package=self.app.package, coverage_dir=self.app.coverage_dir,
-                                     coverage_count=self.app.coverage_count)
+            # if (self.num_timesteps % 25) == 0:
+            #     self.app.coverage_count += 1
+            #     self.app.instr_funct(udid=self.app.udid, package=self.app.package, coverage_dir=self.app.coverage_dir,
+            #                          coverage_count=self.app.coverage_count)
                 return True
         else:
             return True

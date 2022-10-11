@@ -82,7 +82,7 @@ class AppiumLauncher:
 class EmulatorLauncher:
 
     def __init__(self, emu, device_name, android_port, speedup=False):
-        self.device_name: str = '@'+device_name.replace(' ', '_')
+        self.device_name: str = '@' + device_name.replace(' ', '_')
         self.emu: str = emu
         self.android_port: int = android_port
         self.speedup: bool = speedup
@@ -113,8 +113,10 @@ class EmulatorLauncher:
             time.sleep(50.0)
 
         os.system(f'{self.adb_path} -s emulator-{self.android_port} shell settings put global window_animation_scale 0')
-        os.system(f'{self.adb_path} -s emulator-{self.android_port} shell settings put global transition_animation_scale 0')
-        os.system(f'{self.adb_path} -s emulator-{self.android_port} shell settings put global animator_duration_scale 0')
+        os.system(
+            f'{self.adb_path} -s emulator-{self.android_port} shell settings put global transition_animation_scale 0')
+        os.system(
+            f'{self.adb_path} -s emulator-{self.android_port} shell settings put global animator_duration_scale 0')
 
     def restart_emulator(self):
         self.terminate()

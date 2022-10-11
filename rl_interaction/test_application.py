@@ -133,7 +133,6 @@ def main():
     my_log = logger.add(os.path.join('logs', 'logger.log'), format="{time} {level} {message}",
                         filter=lambda record: record["level"].name == "INFO" or "ERROR")
 
-
     appium = AppiumLauncher(appium_port)
     if real_device:
         emulator = None
@@ -159,7 +158,7 @@ def main():
             ready = False
         if ready:
             package = None
-            
+
             while cycle < N:
                 logger.info(f'app: {app_name}, test {cycle} of {N} starting')
                 # coverage dir
@@ -186,11 +185,11 @@ def main():
                 clicked_buttons = []
                 number_bugs = []
 
-                os.system(f'{adb_path} -s {udid} install -t -r {application}')
-                result = subprocess.run(
-                    [adb_path, "shell", "su", "0", "find", "/data/data/", "-type", "d", "-name", f'"{my_package}*"'],
-                    capture_output=True)
-                package = result.stdout.decode('utf-8').strip('\n').rsplit('/')[-1]
+                # os.system(f'{adb_path} -s {udid} install -t -r {application}')
+                # result = subprocess.run(
+                #     [adb_path, "shell", "su", "0", "find", "/data/data/", "-type", "d", "-name", f'"{my_package}*"'],
+                #     capture_output=True)
+                # package = result.stdout.decode('utf-8').strip('\n').rsplit('/')[-1]
 
                 try:
                     app = RLApplicationEnv(coverage_dict, app_path=application,
@@ -284,8 +283,8 @@ def main():
                         logger.error(f'Too Many Times tried, app: {app_name}, iteration: {cycle}')
                         break
             # in order to avoid faulty behavior we uninstall the application
-            if package:
-                os.system(f'{adb_path} -s {udid} uninstall {package}')
+            # if package:
+            #     os.system(f'{adb_path} -s {udid} uninstall {package}')
     if emulator is not None:
         emulator.terminate()
     appium.terminate()

@@ -109,6 +109,9 @@ class CoverageProcessor(object):
         if self.get_number_of_methods_instrumented() > 0:
             return (self.get_number_methods_called()/self.get_number_of_methods_instrumented())*100
 
+    def reset(self):
+        self.methods_called.clear()
+        self.clear_logcat()
 
 if __name__ == "__main__":
     id_device = sys.argv[1]
