@@ -17,6 +17,7 @@ class CoverageProcessor(object):
         self.logcat_position = 0
         self.logcat_current = None
         self.methods_called = set()
+        self.cumulative_methods_called = set()
         self.read_number_of_methods_instrumented(method_locations_path)
 
     def get_device_id(self):
@@ -39,6 +40,9 @@ class CoverageProcessor(object):
 
     def get_number_methods_called(self):
         return len(self.methods_called)
+
+    def get_number_cumulative_methods_called(self):
+        return len(self.cumulative_methods_called)
 
     def set_methods_instrumented(self, methods_instrumented):
         self.methods_instrumented = methods_instrumented
@@ -74,7 +78,7 @@ class CoverageProcessor(object):
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.set_logcat_current(process.stdout)
         self.read_logcat()
-        return self.get_number_of_methods_instrumented(), self.get_number_methods_called(), self.get_coverage_percentage()
+        return self.get_number_of_methods_instrumented(), self.get_number_methods_called(), self.get_coverage_percentage(), self.get_cumulative_coverage(), self.get_number_cumulative_methods_called()
 
     def read_logcat(self):
         logcat = self.get_logcat_current()
@@ -102,12 +106,17 @@ class CoverageProcessor(object):
             line = splittedLine[1]
             values = line.split(SEMICOLON_SPLIT)[1]
             self.methods_called.add(values)
+            self.cumulative_methods_called.add(values)
         else:
             logger.info(f"Instruapk line not processed: {line}")
 
     def get_coverage_percentage(self):
         if self.get_number_of_methods_instrumented() > 0:
             return (self.get_number_methods_called()/self.get_number_of_methods_instrumented())*100
+
+    def get_cumulative_coverage(self):
+        if self.get_number_of_methods_instrumented() > 0:
+            return (self.get_number_cumulative_methods_called() / self.get_number_of_methods_instrumented())*100
 
     def reset(self):
         self.methods_called.clear()

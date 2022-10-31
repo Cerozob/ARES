@@ -30,7 +30,7 @@ class DDPGAlgorithm(ExplorationAlgorithm):
                 pass
             else:
                 logger.info('Starting training from zero')
-                model = DDPG(MlpPolicy, env, verbose=1, train_freq=train_freq)
+                model = DDPG(MlpPolicy, env, verbose=1, train_freq=train_freq, learning_starts=kwargs.get("learning_steps"))
             # model.env.envs[0].check_activity() # why?
             callback = TimerCallback(timer=timer, app=app)
             model.learn(total_timesteps=timesteps, callback=callback)

@@ -52,7 +52,7 @@ def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_st
                                coverage_dir: Path, coverage_count):
     logReaderObject.readLog()
     newFaults = logReaderObject.getNewFaults()
-    numberOfInstrumentedMethods, numberofCalledMethods, coveragePercentage = coverageProcessorObject.generate_adb_logcat()
+    numberOfInstrumentedMethods, numberofCalledMethods, coveragePercentage, cumulativeCoveragePercentage, numberOfCumulativeMethodsCalled = coverageProcessorObject.generate_adb_logcat()
     calledMethods = coverageProcessorObject.get_methods_id_called()
     jsonserializablefaults = [fault.toJSONSerializableObject() for fault in newFaults]
     # for now, just print the lines found
@@ -68,9 +68,11 @@ def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_st
     report_object = {
         "Algorithm": algorithm,
         "total_time_taken": time_taken,
+        "cumulativeCoveragePercentage": cumulativeCoveragePercentage,
         "coveragePercentage": coveragePercentage,
         "numberOfInstrumentedMethods": numberOfInstrumentedMethods,
         "numberOfCalledMethods": numberofCalledMethods,
+        "numberOfCumulativeMethodsCalled": numberOfCumulativeMethodsCalled,
         "calledMethods": list(calledMethods),
         "newFaults": jsonserializablefaults
     }

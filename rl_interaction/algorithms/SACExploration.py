@@ -25,7 +25,7 @@ class SACAlgorithm(ExplorationAlgorithm):
                 env.action_space.high[0] = temp_dim
             else:
                 print('Starting training from zero')
-                model = SAC(MlpPolicy, env, verbose=1, train_freq=train_freq, target_update_interval=target_update_interval)
+                model = SAC(MlpPolicy, env, verbose=1, train_freq=train_freq, target_update_interval=target_update_interval, learning_starts=kwargs.get("learning_steps"))
             model.env.envs[0].check_activity()
             callback = TimerCallback(timer=timer, app=app)
             model.learn(total_timesteps=timesteps, callback=callback)

@@ -240,7 +240,7 @@ def main():
                     logger.debug("save_policy value: {}".format(save_policy))
                     flag = algorithm.explore(app, emulator, appium, timesteps, timer, save_policy=save_policy,
                                              reload_policy=reload_policy, app_name=app_name, policy_dir=policy_dir,
-                                             cycle=cycle)
+                                             cycle=cycle, learning_steps=max_timesteps)
                     if flag:
                         with open(f'logs{os.sep}success.log', 'a+') as f:
                             f.write(f'{app_name}\n')
