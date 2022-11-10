@@ -72,7 +72,7 @@ def main():
     parser.add_argument('--max_timesteps', type=int, default=250)
     parser.add_argument('--pool_strings', type=str, default='strings.txt')
     parser.add_argument('--trials_per_app', type=int, default=3)
-    parser.add_argument('--method_locations_path', type=str, default="org.sudowars-locations.json")
+    parser.add_argument('--method_locations_path', type=str)
     parser.add_argument('--coverage_report_path', type=str, default="./reports/")
 
     args = parser.parse_args()
