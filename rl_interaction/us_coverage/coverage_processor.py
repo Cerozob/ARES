@@ -35,6 +35,9 @@ class CoverageProcessor(object):
     def get_methods_id_called(self):
         return self.methods_called
 
+    def get_cumulative_methods_id_called(self):
+        return self.cumulative_methods_called
+
     def get_number_of_methods_instrumented(self):
         return self.methods_instrumented
 

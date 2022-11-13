@@ -1,9 +1,9 @@
-
 from datetime import datetime
 from enum import Enum
 import subprocess
 import sys
 import traceback
+
 
 # ! type hinting removed for compatibility with python 3.8
 
@@ -44,8 +44,9 @@ class LogLine(object):
             self.tag = LogTag.UNKNOWN
         self.message = " ".join(lineComponents[4:]) if len_line_components > 4 else ""
 
-    def toJSONSerializableObject(self) -> str:
-        return {"raw": self.rawLine, "index": self.index, "time": self.time.isoformat(), "pid": self.pid, "tid": self.tid, "tag": self.tag.value, "message": self.message}
+    def toJSONSerializableObject(self) -> dict:
+        return {"raw": self.rawLine, "index": self.index, "time": self.time.isoformat(), "pid": self.pid,
+                "tid": self.tid, "tag": self.tag.value, "message": self.message}
 
     def __str__(self):
         return f"{self.index};{self.time};{self.pid};{self.tid};{self.tag};{self.message}"
@@ -60,10 +61,10 @@ class InstrumentationLine(LogLine):
         self.filename = lineComponents[2]
         self.methodName = lineComponents[3]
         self.methodParameters = lineComponents[4:-1]
-        timestamp = float(lineComponents[-1])/1000
+        timestamp = float(lineComponents[-1]) / 1000
         self.callTime = datetime.fromtimestamp(timestamp)
 
-    def toJSONSerializableObject(self) -> str:
+    def toJSONSerializableObject(self) -> dict:
         baseobject = super().toJSONSerializableObject()
         baseobject["methodIndex"] = self.methodIndex
         baseobject["filename"] = self.filename
@@ -86,12 +87,23 @@ class Fault(object):
                 self.type = fault
         self.time: datetime = self.header.time
 
-    def toJSONSerializableObject(self) -> str:
-        return {"header": self.header.toJSONSerializableObject(), "lines": [line.toJSONSerializableObject() for line in self.lines], "type": self.type.value, "time": self.time.isoformat()}
+    def toJSONSerializableObject(self) -> dict:
+        return {"header": self.header.toJSONSerializableObject(),
+                "lines": [line.toJSONSerializableObject() for line in self.lines], "type": self.type.value,
+                "time": self.time.isoformat()}
 
     def __str__(self) -> str:
         lines = "\n\t".join([str(line) for line in self.lines])
         return f"{self.header};\n{self.type};{self.time};{lines}"
+
+    def __hash__(self):
+        for line in self.lines:
+            if ": at " in line.message:
+                return hash((self.header.message, line.message))
+        return hash(self.header.message)
+
+    def __eq__(self, other):
+        return hash(self) == hash(other)
 
 
 class LogReader(object):
@@ -102,6 +114,7 @@ class LogReader(object):
         self.apkPid = None
         self.lastBufferPosition = 0
         self.rawLines, self.instrumentationLines, self.faults = [], [], []
+        self.uniqueFaultsEpisode, self.uniqueFaultsTotal = set(), set()
         self.lastCoverageRequest = 0
         self.lastFaultRequest = 0
 
@@ -110,6 +123,8 @@ class LogReader(object):
         self.rawLines += newLines
         self.instrumentationLines += newInstrumentationLines
         self.faults += newFaults
+        self.uniqueFaultsEpisode.update(newFaults)
+        self.uniqueFaultsTotal.update(newFaults)
         return self.rawLines, self.instrumentationLines, self.faults
 
     def runReadCommand(self, command):
@@ -129,7 +144,7 @@ class LogReader(object):
             else:
                 diffIndex = None
                 try:
-                    diffIndex = decodedLines.index(lastReadLine)+1
+                    diffIndex = decodedLines.index(lastReadLine) + 1
                 except ValueError:
                     diffIndex = 0
                 return decodedLines[diffIndex:]
@@ -182,13 +197,15 @@ class LogReader(object):
                 return []
             else:
                 print(f"Previous PID found: {previousPID}")
-                print(f"App is not currently running but was running previously, it may have crashed, logging with previous pid {currentPID}")
+                print(
+                    f"App is not currently running but was running previously, it may have crashed, logging with previous pid {currentPID}")
         else:
             print(f"App with package name {self.packageName} is currently running with PID {currentPID}")
             if previousPID is None:
                 print(f"No previous PID found, logging with PID {currentPID}")
             elif previousPID != currentPID:
-                print(f"Previous PID {previousPID} differs from current PID {currentPID}, the app may have restarted or crashed")
+                print(
+                    f"Previous PID {previousPID} differs from current PID {currentPID}, the app may have restarted or crashed")
                 commandPreviousPID = command.copy()
                 commandPreviousPID.append(f'--pid={previousPID}')
                 logLines += self.runReadCommand(commandPreviousPID)
@@ -226,18 +243,22 @@ class LogReader(object):
                 logLine = InstrumentationLine(line, index)
                 rawLines[-1] = logLine
                 instrumentationLines.append(index)
-            if faultReading:
-                if any(keyword in logLine.message for keyword in faultReadingKeywords):
+            else:
+                if faultReading:
+                    if any(keyword in logLine.message for keyword in faultReadingKeywords):
+                        currentFaultLines.append(logLine)
+                    else:
+                        faultReading = False
+                        newFault = Fault(currentFaultLines)
+                        faults.append(newFault)
+                        currentFaultLines.clear()
+                        faultReadingKeywords.pop()
+                elif logLine.tag == LogTag.ERROR or any(keyword in logLine.message for keyword in faultStartKeywords):
+                    if not faultReading:
+                        # Add header into the array to match following lines
+                        faultReadingKeywords.append(logLine.message.split(":")[1].strip())
+                        faultReading = True
                     currentFaultLines.append(logLine)
-                else:
-                    faultReading = False
-                    newFault = Fault(currentFaultLines)
-                    faults.append(newFault)
-                    currentFaultLines.clear()
-            elif logLine.tag == LogTag.ERROR or any(keyword in logLine.message for keyword in faultStartKeywords):
-                if not faultReading:
-                    faultReading = True
-                currentFaultLines.append(logLine)
             index += 1
 
         return rawLines, instrumentationLines, faults
@@ -254,7 +275,7 @@ class LogReader(object):
             self.instrumentationLines.clear()
             self.rawLines.clear()
         else:
-            for lineindex in range(len(self.rawLines)-1, -1, -1):
+            for lineindex in range(len(self.rawLines) - 1, -1, -1):
                 if not isinstance(self.rawLines[lineindex], InstrumentationLine):
                     del self.rawLines[lineindex]
             self.instrumentationLines = list(range(len(self.rawLines)))
@@ -273,6 +294,11 @@ class LogReader(object):
         newFaults: list[Fault] = self.faults[self.lastFaultRequest:]
         self.lastFaultRequest = len(self.faults)
         return newFaults
+
+    def getUniqueFaults(self):
+        uniqueEpisode = list(self.uniqueFaultsEpisode)
+        self.uniqueFaultsEpisode.clear()
+        return uniqueEpisode, list(self.uniqueFaultsTotal)
 
     def getNewInstrumentationLines(self):
         newLines: list[InstrumentationLine] = []

@@ -52,9 +52,13 @@ def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_st
                                coverage_dir: Path, coverage_count):
     logReaderObject.readLog()
     newFaults = logReaderObject.getNewFaults()
+    uniqueFaultsEpisode, uniqueFaultsTotal = logReaderObject.getUniqueFaults()
     numberOfInstrumentedMethods, numberofCalledMethods, coveragePercentage, cumulativeCoveragePercentage, numberOfCumulativeMethodsCalled = coverageProcessorObject.generate_adb_logcat()
     calledMethods = coverageProcessorObject.get_methods_id_called()
+    cumulativeCalledMethods = coverageProcessorObject.get_cumulative_methods_id_called()
     jsonserializablefaults = [fault.toJSONSerializableObject() for fault in newFaults]
+    jsonSerializableUniqueFaultsEpisode = [fault.toJSONSerializableObject() for fault in uniqueFaultsEpisode]
+    jsonSerializableUniqueFaultsTotal = [fault.toJSONSerializableObject() for fault in uniqueFaultsTotal]
     # for now, just print the lines found
     logger.info(f"current coverage status:")
     logger.info(f"{coveragePercentage}%")
@@ -64,7 +68,7 @@ def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_st
     # coverage report generation in json format
     time_taken = time.time() - time_start
     today = time.strftime("%Y-%m-%d %H-%M-%S")
-    report_file = coverage_dir.joinpath(f"report_{udid}_{package}_{coverage_count}_{today}_{algorithm}.json")
+    report_file = coverage_dir.joinpath(f"ARES_{udid}_{package}_{coverage_count}_{today}_{algorithm}.json")
     report_object = {
         "Algorithm": algorithm,
         "total_time_taken": time_taken,
@@ -74,7 +78,10 @@ def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_st
         "numberOfCalledMethods": numberofCalledMethods,
         "numberOfCumulativeMethodsCalled": numberOfCumulativeMethodsCalled,
         "calledMethods": list(calledMethods),
-        "newFaults": jsonserializablefaults
+        "cumulativeCalledMethods": list(cumulativeCalledMethods),
+        "newFaults": jsonserializablefaults,
+        "uniqueFaultsEpisode": jsonSerializableUniqueFaultsEpisode,
+        "uniqueFaultsTotal": jsonSerializableUniqueFaultsTotal
     }
     if not report_file.exists():
         report_file.touch()
@@ -300,7 +307,7 @@ class RLApplicationEnv(Env):
                 # Do Action
                 self.action(current_view, action_number)
                 time.sleep(0.2)
-        self.bug, self.outside = self.check_activity()
+        self.outside = self.check_activity()
         if self.outside:
             self.outside = False
             # We need to reset the application
@@ -419,7 +426,7 @@ class RLApplicationEnv(Env):
         self.current_activity = self.rename_activity(self.driver.current_activity)
         self.old_activity = self.current_activity
         self.set_activities_episode = {self.current_activity}
-        self.bug, self.outside = self.check_activity()
+        self.outside = self.check_activity()
         self.get_observation()
         return self.observation
 
@@ -458,12 +465,13 @@ class RLApplicationEnv(Env):
             self.bug_set.add(new_bug)
             logger.error('A bug occurred, relaunching application')
             logger.critical(new_bug)
-            return True, False
+            self.bug = True
+            return False
 
         # If it is not a bug we could be outside the application
         elif (self.package != self.driver.current_package) or (temp_activity is None) or \
                 (temp_activity.find('com.facebook.FacebookActivity') >= 0):
-            return False, True
+            return True
 
         # If we have changed the activity:
         elif self.current_activity != temp_activity:
@@ -472,7 +480,8 @@ class RLApplicationEnv(Env):
 
         # Updating buttons
         self.update_views()
-        return False, False
+        self.bug = False
+        return False
 
     def update_views(self):
         i = 0
@@ -553,7 +562,7 @@ class RLApplicationEnv(Env):
         self.number_bugs.append(len(self.bug_set))
 
     def termination(self):
-        if (self.timesteps >= self._max_episode_steps) or self.bug or self.outside:
+        if (self.timesteps >= self._max_episode_steps) or self.outside:
             self.bug = False
             self.outside = False
             return True
