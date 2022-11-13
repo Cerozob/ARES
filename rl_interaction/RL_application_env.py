@@ -77,8 +77,8 @@ def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_st
         "numberOfInstrumentedMethods": numberOfInstrumentedMethods,
         "numberOfCalledMethods": numberofCalledMethods,
         "numberOfCumulativeMethodsCalled": numberOfCumulativeMethodsCalled,
-        "calledMethods": list(calledMethods),
-        "cumulativeCalledMethods": list(cumulativeCalledMethods),
+        "calledMethods": calledMethods,
+        "cumulativeCalledMethods": cumulativeCalledMethods,
         "newFaults": jsonserializablefaults,
         "uniqueFaultsEpisode": jsonSerializableUniqueFaultsEpisode,
         "uniqueFaultsTotal": jsonSerializableUniqueFaultsTotal

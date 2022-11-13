@@ -16,8 +16,8 @@ class CoverageProcessor(object):
         self.apk_package = apk_package
         self.logcat_position = 0
         self.logcat_current = None
-        self.methods_called = set()
-        self.cumulative_methods_called = set()
+        self.methods_called = {}
+        self.cumulative_methods_called = {}
         self.read_number_of_methods_instrumented(method_locations_path)
 
     def get_device_id(self):
@@ -107,9 +107,9 @@ class CoverageProcessor(object):
         splittedLine = re.split(pattern, line)
         if len(splittedLine) > 1:
             line = splittedLine[1]
-            values = line.split(SEMICOLON_SPLIT)[1]
-            self.methods_called.add(values)
-            self.cumulative_methods_called.add(values)
+            method = line.split(SEMICOLON_SPLIT)[1]            
+            self.methods_called[method] = self.methods_called.get(method, 0) + 1
+            self.cumulative_methods_called[method] = self.methods_called.get(method, 0) + 1
         else:
             logger.info(f"Instruapk line not processed: {line}")
 
