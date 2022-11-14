@@ -11,7 +11,7 @@ SEMICOLON_SPLIT = ";;"
 
 
 class CoverageProcessor(object):
-    def __init__(self,  device_id: str, apk_package: str, method_locations_path=None):
+    def __init__(self, device_id: str, apk_package: str, method_locations_path=None):
         self.device_id = device_id
         self.apk_package = apk_package
         self.logcat_position = 0
@@ -107,23 +107,29 @@ class CoverageProcessor(object):
         splittedLine = re.split(pattern, line)
         if len(splittedLine) > 1:
             line = splittedLine[1]
-            method = line.split(SEMICOLON_SPLIT)[1]            
-            self.methods_called[method] = self.methods_called.get(method, 0) + 1
-            self.cumulative_methods_called[method] = self.methods_called.get(method, 0) + 1
+            data_method = line.split(SEMICOLON_SPLIT)
+            method = data_method[1]
+            filename = data_method[2]
+            self.methods_called[method] = self.methods_called.get(method, {"count": 0, "filename": filename})
+            self.methods_called[method]["count"] += 1
+
+            self.cumulative_methods_called[method] = self.methods_called.get(method, {"count": 0, "filename": filename})
+            self.cumulative_methods_called[method]["count"] += 1
         else:
             logger.info(f"Instruapk line not processed: {line}")
 
     def get_coverage_percentage(self):
         if self.get_number_of_methods_instrumented() > 0:
-            return (self.get_number_methods_called()/self.get_number_of_methods_instrumented())*100
+            return (self.get_number_methods_called() / self.get_number_of_methods_instrumented()) * 100
 
     def get_cumulative_coverage(self):
         if self.get_number_of_methods_instrumented() > 0:
-            return (self.get_number_cumulative_methods_called() / self.get_number_of_methods_instrumented())*100
+            return (self.get_number_cumulative_methods_called() / self.get_number_of_methods_instrumented()) * 100
 
     def reset(self):
         self.methods_called.clear()
         self.clear_logcat()
+
 
 if __name__ == "__main__":
     id_device = sys.argv[1]
@@ -131,7 +137,7 @@ if __name__ == "__main__":
     coverage_processor = CoverageProcessor(id_device, package_name)  # 'R5CR70M9SMH', 'org.wikipedia'
     # coverage_processor.clear_logcat()
     print(coverage_processor.generate_adb_logcat())
-# coverage_processor = CoverageProcessor('R5CR70M9SMH', 'org.sudowars')
-# coverage_processor.clear_logcat()
+    # coverage_processor = CoverageProcessor('R5CR70M9SMH', 'org.sudowars')
+    # coverage_processor.clear_logcat()
     while True:
         print(coverage_processor.generate_adb_logcat())
