@@ -307,6 +307,9 @@ class LogReader(object):
         self.lastCoverageRequest = len(self.instrumentationLines)
         return newLines
 
+    def clear_unique_faults(self):
+        self.uniqueFaultsTotal.clear()
+
 
 if __name__ == "__main__":
     packageName = sys.argv[1]

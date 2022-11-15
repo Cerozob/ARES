@@ -178,7 +178,7 @@ class RLApplicationEnv(Env):
         self.connection = False
         self.bug_queue = Queue()
         self.strings = []
-        self.coverage_count = 0
+        self.coverage_count = -1
         self.observation = numpy.array([0] * self.OBSERVATION_SPACE)
         self._max_episode_steps = max_episode_len
         self.timesteps = 0
@@ -384,9 +384,14 @@ class RLApplicationEnv(Env):
     def reset(self):
         logger.debug('<--- EPISODE RESET --->')
 
-        if self.coverage_count != 0:
+        if self.coverage_count > 0:
             self.instr_funct(udid=self.udid, package=self.package, coverage_dir=self.coverage_dir,
                              coverage_count=self.coverage_count)
+        if self.coverage_count == 0:
+            # Clears the data because first episode is just random interactions
+            self.coverageProcessorObject.clear_cumulative_methods()
+            self.logReaderObject.clear_unique_faults()
+
         self.coverage_count += 1
 
         self._md5 = ''

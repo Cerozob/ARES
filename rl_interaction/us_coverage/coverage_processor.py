@@ -130,6 +130,9 @@ class CoverageProcessor(object):
         self.methods_called.clear()
         self.clear_logcat()
 
+    def clear_cumulative_methods(self):
+        self.cumulative_methods_called.clear()
+
 
 if __name__ == "__main__":
     id_device = sys.argv[1]
