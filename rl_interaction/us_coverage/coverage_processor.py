@@ -16,6 +16,9 @@ class CoverageProcessor(object):
         self.apk_package = apk_package
         self.logcat_position = 0
         self.logcat_current = None
+        self.methods_package = None
+        self.uncalled_methods = None
+        self.cumulative_uncalled_methods = None
         self.methods_called = {}
         self.cumulative_methods_called = {}
         self.read_number_of_methods_instrumented(method_locations_path)
@@ -38,6 +41,12 @@ class CoverageProcessor(object):
     def get_cumulative_methods_id_called(self):
         return self.cumulative_methods_called
 
+    def get_methods_id_uncalled(self):
+        return self.uncalled_methods
+
+    def get_cumulative_methods_id_uncalled(self):
+        return self.cumulative_uncalled_methods
+
     def get_number_of_methods_instrumented(self):
         return self.methods_instrumented
 
@@ -46,6 +55,12 @@ class CoverageProcessor(object):
 
     def get_number_cumulative_methods_called(self):
         return len(self.cumulative_methods_called)
+
+    def get_number_methods_uncalled(self):
+        return len(self.uncalled_methods)
+
+    def get_number_cumulative_methods_uncalled(self):
+        return len(self.cumulative_uncalled_methods)
 
     def set_methods_instrumented(self, methods_instrumented):
         self.methods_instrumented = methods_instrumented
@@ -57,11 +72,20 @@ class CoverageProcessor(object):
         self.logcat_position += logcat_line
 
     def __read_file_number_of_methods(self, file):
-        pattern = re.compile("\"[0-9]+\":{")
+        pattern_ids = re.compile(r"\"(\d+)\":{")
+        package_path = r"[\\/]".join(self.get_apk_package().split("."))
+        pattern_package = re.compile(r"\"(\d+)\":{\n.+\n.+\n.+smali[\\/]" + package_path + r"[\\/](\w+)[\\/]")
+
         text = file.read()
-        lista = re.findall(pattern, text)
-        string_number = lista[-1].replace("\"", "").replace(":", "").replace("{", "")
-        return int(string_number)
+
+        id_list = re.findall(pattern_ids, text)
+        self.methods_package = dict.fromkeys(id_list)
+
+        package_ids = re.findall(pattern_package, text)
+        for method_id, package in package_ids:
+            self.methods_package[method_id] = package
+
+        return int(id_list[-1])
 
     def read_number_of_methods_instrumented(self, path=None):
         if path is None:
@@ -81,7 +105,7 @@ class CoverageProcessor(object):
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.set_logcat_current(process.stdout)
         self.read_logcat()
-        return self.get_number_of_methods_instrumented(), self.get_number_methods_called(), self.get_coverage_percentage(), self.get_cumulative_coverage(), self.get_number_cumulative_methods_called()
+        return self.get_number_of_methods_instrumented(), self.get_number_methods_called(), self.get_coverage_percentage(), self.get_cumulative_coverage(), self.get_number_cumulative_methods_called(), self.get_number_methods_uncalled(), self.get_number_cumulative_methods_uncalled()
 
     def read_logcat(self):
         logcat = self.get_logcat_current()
@@ -110,11 +134,24 @@ class CoverageProcessor(object):
             data_method = line.split(SEMICOLON_SPLIT)
             method = data_method[1]
             filename = data_method[2]
-            self.methods_called[method] = self.methods_called.get(method, {"count": 0, "filename": filename})
+            self.methods_called[method] = self.methods_called.get(method, {"count": 0, "filename": filename,
+                                                                           "package": self.methods_package[method]})
             self.methods_called[method]["count"] += 1
 
-            self.cumulative_methods_called[method] = self.methods_called.get(method, {"count": 0, "filename": filename})
+            self.cumulative_methods_called[method] = self.methods_called.get(method, {"count": 0, "filename": filename,
+                                                                                      "package": self.methods_package[
+                                                                                          method]})
             self.cumulative_methods_called[method]["count"] += 1
+
+            try:
+                self.uncalled_methods.remove(method)
+            except KeyError:
+                pass
+
+            try:
+                self.cumulative_uncalled_methods.remove(method)
+            except KeyError:
+                pass
         else:
             logger.info(f"Instruapk line not processed: {line}")
 
@@ -128,10 +165,12 @@ class CoverageProcessor(object):
 
     def reset(self):
         self.methods_called.clear()
+        self.uncalled_methods = set(self.methods_package.keys())
         self.clear_logcat()
 
     def clear_cumulative_methods(self):
         self.cumulative_methods_called.clear()
+        self.cumulative_uncalled_methods = set(self.methods_package.keys())
 
 
 if __name__ == "__main__":

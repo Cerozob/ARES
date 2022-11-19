@@ -53,9 +53,11 @@ def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_st
     logReaderObject.readLog()
     newFaults = logReaderObject.getNewFaults()
     uniqueFaultsEpisode, uniqueFaultsTotal = logReaderObject.getUniqueFaults()
-    numberOfInstrumentedMethods, numberofCalledMethods, coveragePercentage, cumulativeCoveragePercentage, numberOfCumulativeMethodsCalled = coverageProcessorObject.generate_adb_logcat()
+    numberOfInstrumentedMethods, numberofCalledMethods, coveragePercentage, cumulativeCoveragePercentage, numberOfCumulativeMethodsCalled, numberOfUncalledMethods, numberOfCumulativeMethodsUncalled = coverageProcessorObject.generate_adb_logcat()
     calledMethods = coverageProcessorObject.get_methods_id_called()
     cumulativeCalledMethods = coverageProcessorObject.get_cumulative_methods_id_called()
+    cumulativeUncalledMethods = coverageProcessorObject.get_cumulative_methods_id_uncalled()
+    uncalledMethods = coverageProcessorObject.get_methods_id_uncalled()
     jsonserializablefaults = [fault.toJSONSerializableObject() for fault in newFaults]
     jsonSerializableUniqueFaultsEpisode = [fault.toJSONSerializableObject() for fault in uniqueFaultsEpisode]
     jsonSerializableUniqueFaultsTotal = [fault.toJSONSerializableObject() for fault in uniqueFaultsTotal]
@@ -77,8 +79,12 @@ def collect_coverage_InstruAPK(logReaderObject, coverageProcessorObject, time_st
         "numberOfInstrumentedMethods": numberOfInstrumentedMethods,
         "numberOfCalledMethods": numberofCalledMethods,
         "numberOfCumulativeMethodsCalled": numberOfCumulativeMethodsCalled,
+        "numberOfUncalledMethods": numberOfUncalledMethods,
+        "numberOfCumulativeMethodsUncalled": numberOfCumulativeMethodsUncalled,
         "calledMethods": calledMethods,
         "cumulativeCalledMethods": cumulativeCalledMethods,
+        "uncalledMethods": list(uncalledMethods),
+        "cumulativeUncalledMethods": list(cumulativeUncalledMethods),
         "newFaults": jsonserializablefaults,
         "uniqueFaultsEpisode": jsonSerializableUniqueFaultsEpisode,
         "uniqueFaultsTotal": jsonSerializableUniqueFaultsTotal
