@@ -313,7 +313,7 @@ class RLApplicationEnv(Env):
                 # Do Action
                 self.action(current_view, action_number)
                 time.sleep(0.2)
-        self.outside = self.check_activity()
+        self.bug, self.outside = self.check_activity()
         if self.outside:
             self.outside = False
             # We need to reset the application
@@ -437,17 +437,14 @@ class RLApplicationEnv(Env):
         self.current_activity = self.rename_activity(self.driver.current_activity)
         self.old_activity = self.current_activity
         self.set_activities_episode = {self.current_activity}
-        self.outside = self.check_activity()
+        self.bug, self.outside = self.check_activity()
         self.get_observation()
         return self.observation
 
     def get_observation(self):
-        if self.bug:
-            self.observation = numpy.array([0] * self.OBSERVATION_SPACE)
-        else:
-            observation_0 = self.one_hot_encoding_activities()
-            observation_1 = self.one_hot_encoding_widgets()
-            self.observation = numpy.array(observation_0 + observation_1)
+        observation_0 = self.one_hot_encoding_activities()
+        observation_1 = self.one_hot_encoding_widgets()
+        self.observation = numpy.array(observation_0 + observation_1)
 
     def one_hot_encoding_activities(self):
         activity_observation = [0] * len(self.list_activities)
@@ -476,13 +473,12 @@ class RLApplicationEnv(Env):
             self.bug_set.add(new_bug)
             logger.error('A bug occurred, relaunching application')
             logger.critical(new_bug)
-            self.bug = True
-            return False
+            return True, False
 
         # If it is not a bug we could be outside the application
         elif (self.package != self.driver.current_package) or (temp_activity is None) or \
                 (temp_activity.find('com.facebook.FacebookActivity') >= 0):
-            return True
+            return False, True
 
         # If we have changed the activity:
         elif self.current_activity != temp_activity:
@@ -491,8 +487,7 @@ class RLApplicationEnv(Env):
 
         # Updating buttons
         self.update_views()
-        self.bug = False
-        return False
+        return False, False
 
     def update_views(self):
         i = 0
