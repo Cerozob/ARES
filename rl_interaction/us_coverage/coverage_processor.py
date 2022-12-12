@@ -16,7 +16,7 @@ class CoverageProcessor(object):
         self.apk_package = apk_package
         self.logcat_position = 0
         self.logcat_current = None
-        self.methods_package = None
+        self.methods_info = {}
         self.uncalled_methods = None
         self.cumulative_uncalled_methods = None
         self.methods_called = {}
@@ -72,20 +72,22 @@ class CoverageProcessor(object):
         self.logcat_position += logcat_line
 
     def __read_file_number_of_methods(self, file):
-        pattern_ids = re.compile(r"\"(\d+)\":{")
         package_path = r"[\\/]".join(self.get_apk_package().split("."))
-        pattern_package = re.compile(r"\"(\d+)\":{\n.+\n.+\n.+smali[\\/]" + package_path + r"[\\/](\w+)[\\/]")
+        pattern_package = re.compile(r"smali[\\/]" + package_path + r"[\\/](\w+)[\\/]")
 
-        text = file.read()
+        text = file.read().replace("\\", "\\\\")
 
-        id_list = re.findall(pattern_ids, text)
-        self.methods_package = dict.fromkeys(id_list)
+        data = json.loads(text)
+        for key, value in data.items():
+            package = re.findall(pattern_package, value["filePath"])
+            self.methods_info[key] = {
+                "filename": value["fileName"],
+                "package": "root" if not package else package[0]
+            }
 
-        package_ids = re.findall(pattern_package, text)
-        for method_id, package in package_ids:
-            self.methods_package[method_id] = package
+        self.cumulative_uncalled_methods = self.methods_info.copy()
 
-        return int(id_list[-1])
+        return len(self.methods_info)
 
     def read_number_of_methods_instrumented(self, path=None):
         if path is None:
@@ -133,23 +135,28 @@ class CoverageProcessor(object):
             line = splittedLine[1]
             data_method = line.split(SEMICOLON_SPLIT)
             method = data_method[1]
-            filename = data_method[2]
-            self.methods_called[method] = self.methods_called.get(method, {"count": 0, "filename": filename,
-                                                                           "package": self.methods_package[method]})
+            self.methods_called[method] = self.methods_called.get(method,
+                                                                  {"count": 0, "filename": self.methods_info[method][
+                                                                      "filename"],
+                                                                   "package": self.methods_info[method]["package"]})
             self.methods_called[method]["count"] += 1
 
-            self.cumulative_methods_called[method] = self.methods_called.get(method, {"count": 0, "filename": filename,
-                                                                                      "package": self.methods_package[
-                                                                                          method]})
+            self.cumulative_methods_called[method] = self.methods_called.get(method, {"count": 0,
+                                                                                      "filename":
+                                                                                          self.methods_info[method][
+                                                                                              "filename"],
+                                                                                      "package":
+                                                                                          self.methods_info[method][
+                                                                                              "package"]})
             self.cumulative_methods_called[method]["count"] += 1
 
             try:
-                self.uncalled_methods.remove(method)
+                del self.uncalled_methods[method]
             except KeyError:
                 pass
 
             try:
-                self.cumulative_uncalled_methods.remove(method)
+                del self.cumulative_uncalled_methods[method]
             except KeyError:
                 pass
         else:
@@ -165,12 +172,12 @@ class CoverageProcessor(object):
 
     def reset(self):
         self.methods_called.clear()
-        self.uncalled_methods = set(self.methods_package.keys())
+        self.uncalled_methods = self.methods_info.copy()
         self.clear_logcat()
 
     def clear_cumulative_methods(self):
         self.cumulative_methods_called.clear()
-        self.cumulative_uncalled_methods = set(self.methods_package.keys())
+        self.cumulative_uncalled_methods = self.methods_info.copy()
 
 
 if __name__ == "__main__":
